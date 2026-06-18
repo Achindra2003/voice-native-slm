@@ -1,0 +1,246 @@
+package com.example.my_agent_app.leap
+
+import android.util.Log
+import ai.liquid.leap.LeapClient
+import ai.liquid.leap.LeapFunction
+import ai.liquid.leap.LeapFunctionParameter
+import ai.liquid.leap.LeapFunctionParameterType
+import ai.liquid.leap.LeapModelRunner
+import ai.liquid.leap.Conversation
+import ai.liquid.leap.MessageResponse
+import ai.liquid.leap.GenerationOptions
+import ai.liquid.leap.HermesFunctionCallParser
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
+/**
+ * LEAP SDK manager for Liquid LFM models
+ * Handles model loading, conversation management, and function calling
+ */
+class LeapInferenceManager {
+    private val TAG = "LeapInferenceManager"
+    private var modelRunner: LeapModelRunner? = null
+    private var conversation: Conversation? = null
+    
+    /**
+     * Load a LEAP model bundle from device storage
+     * @param bundlePath Absolute path to .bundle file (e.g., /data/local/tmp/leap/model.bundle)
+     * @return Success boolean
+     */
+    suspend fun loadModel(bundlePath: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            Log.d(TAG, "Loading LEAP model from: $bundlePath")
+            modelRunner = LeapClient.loadModel(bundlePath)
+            Log.d(TAG, "Model loaded successfully")
+            return@withContext true
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to load model: ${e.message}", e)
+            return@withContext false
+        }
+    }
+    
+    /**
+     * Create a conversation with system prompt and register functions
+     * @param systemPrompt System instruction for the model
+     * @param functions List of function definitions for tool calling
+     * @return Success boolean
+     */
+    fun createConversation(
+        systemPrompt: String,
+        functions: List<Map<String, Any>>
+    ): Boolean {
+        try {
+            val runner = modelRunner ?: run {
+                Log.e(TAG, "Model not loaded")
+                return false
+            }
+            
+            Log.d(TAG, "Creating conversation with ${functions.size} functions")
+            conversation = runner.createConversation(systemPrompt)
+            
+            // Register all functions
+            functions.forEach { funcDef ->
+                val leapFunc = convertToLeapFunction(funcDef)
+                conversation?.registerFunction(leapFunc)
+                Log.d(TAG, "Registered function: ${leapFunc.name}")
+            }
+            
+            return true
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to create conversation: ${e.message}", e)
+            return false
+        }
+    }
+    
+    /**
+     * Generate response from the model with streaming
+     * @param userMessage User input text
+     * @param maxTokens Maximum tokens to generate
+     * @param temperature Sampling temperature
+     * @param useHermesParser Use Hermes function call parser (for Qwen3 models)
+     * @return Map with response data (text, toolCalls, latency, success)
+     */
+    suspend fun generateResponse(
+        userMessage: String,
+        maxTokens: Int = 300,
+        temperature: Double = 0.2,
+        useHermesParser: Boolean = false
+    ): Map<String, Any?> = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        
+        try {
+            val conv = conversation ?: run {
+                Log.e(TAG, "Conversation not created")
+                return@withContext mapOf(
+                    "text" to "",
+                    "toolCalls" to null,
+                    "latencyMs" to 0,
+                    "success" to false,
+                    "error" to "Conversation not initialized"
+                )
+            }
+            
+            val options = if (useHermesParser) {
+                GenerationOptions.build {
+                    functionCallParser = HermesFunctionCallParser()
+                }
+            } else {
+                null
+            }
+            
+            val chunks = mutableListOf<String>()
+            val toolCalls = mutableListOf<Map<String, Any>>()
+            var generationError: String? = null
+            
+            Log.d(TAG, "Generating response for: ${userMessage.take(50)}...")
+            
+            val flow = if (options != null) {
+                conv.generateResponse(userMessage, options)
+            } else {
+                conv.generateResponse(userMessage)
+            }
+            
+            flow.onEach { response ->
+                when (response) {
+                    is MessageResponse.Chunk -> {
+                        chunks.add(response.text)
+                        Log.d(TAG, "Chunk: ${response.text}")
+                    }
+                    is MessageResponse.FunctionCalls -> {
+                        response.functionCalls.forEach { call ->
+                            Log.d(TAG, "Function call: ${call.name}, args: ${call.arguments}")
+                            toolCalls.add(mapOf(
+                                "name" to call.name,
+                                "arguments" to call.arguments
+                            ))
+                        }
+                    }
+                    is MessageResponse.Complete -> {
+                        Log.d(TAG, "Generation complete")
+                    }
+                    else -> {
+                        Log.d(TAG, "Other response: $response")
+                    }
+                }
+            }
+            .catch { exception ->
+                Log.e(TAG, "Generation error: ${exception.message}", exception)
+                generationError = exception.message
+            }
+            .onCompletion {
+                Log.d(TAG, "Generation flow completed")
+            }
+            .toList()  // Collect all responses
+            
+            val latency = System.currentTimeMillis() - startTime
+            val fullText = chunks.joinToString("")
+            
+            return@withContext mapOf(
+                "text" to fullText,
+                "toolCalls" to if (toolCalls.isNotEmpty()) toolCalls else null,
+                "latencyMs" to latency.toInt(),
+                "success" to (generationError == null),
+                "error" to generationError
+            )
+            
+        } catch (e: Exception) {
+            val latency = System.currentTimeMillis() - startTime
+            Log.e(TAG, "Failed to generate response: ${e.message}", e)
+            return@withContext mapOf(
+                "text" to "",
+                "toolCalls" to null,
+                "latencyMs" to latency.toInt(),
+                "success" to false,
+                "error" to e.message
+            )
+        }
+    }
+    
+    /**
+     * Convert function definition map to LeapFunction
+     */
+    private fun convertToLeapFunction(funcDef: Map<String, Any>): LeapFunction {
+        val name = funcDef["name"] as String
+        val description = funcDef["description"] as? String ?: ""
+        val parameters = (funcDef["parameters"] as? Map<String, Any>) ?: emptyMap()
+        val properties = (parameters["properties"] as? Map<String, Map<String, Any>>) ?: emptyMap()
+        val required = (parameters["required"] as? List<String>) ?: emptyList()
+        
+        val leapParams = properties.map { (paramName, paramDef) ->
+            val type = paramDef["type"] as? String ?: "string"
+            val paramDesc = paramDef["description"] as? String ?: ""
+            val enumValues = paramDef["enum"] as? List<Any>
+            
+            val leapType = when (type) {
+                "string" -> {
+                    if (enumValues != null) {
+                        LeapFunctionParameterType.String(
+                            enumValues = enumValues.map { it.toString() },
+                            description = paramDesc
+                        )
+                    } else {
+                        LeapFunctionParameterType.String(description = paramDesc)
+                    }
+                }
+                "integer", "number" -> {
+                    if (enumValues != null) {
+                        LeapFunctionParameterType.Integer(
+                            enumValues = enumValues.map { (it as Number).toInt() },
+                            description = paramDesc
+                        )
+                    } else {
+                        LeapFunctionParameterType.Integer(description = paramDesc)
+                    }
+                }
+                "boolean" -> LeapFunctionParameterType.Boolean(description = paramDesc)
+                else -> LeapFunctionParameterType.String(description = paramDesc)
+            }
+            
+            LeapFunctionParameter(
+                name = paramName,
+                type = leapType,
+                description = paramDesc,
+                optional = !required.contains(paramName)
+            )
+        }
+        
+        return LeapFunction(
+            name = name,
+            description = description,
+            parameters = leapParams
+        )
+    }
+    
+    /**
+     * Dispose resources
+     */
+    fun dispose() {
+        conversation = null
+        modelRunner = null
+        Log.d(TAG, "Resources disposed")
+    }
+}
