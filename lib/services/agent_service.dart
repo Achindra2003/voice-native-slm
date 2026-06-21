@@ -1,9 +1,9 @@
 // Owns the on-device language model (Cactus) and turns a natural-language
 // command into structured tool calls. Pure logic — no Flutter dependencies.
 
-import 'package:cactus/cactus.dart';
-
 import '../models/agent_model.dart';
+import '../native/cactus_engine.dart';
+import '../native/model_store.dart';
 import '../tools/agent_tools.dart';
 
 /// One function call extracted from the model's response.
@@ -30,30 +30,29 @@ class AgentResult {
 }
 
 class AgentService {
-  CactusLM? _lm;
+  CactusEngine? _engine;
   String currentModelId;
 
   AgentService({this.currentModelId = kDefaultModelId});
 
-  bool get isLoaded => _lm?.isLoaded() ?? false;
+  bool get isLoaded => _engine?.isLoaded ?? false;
 
-  /// Download (if needed) and initialize the current model.
+  /// Initialize the current model from its staged on-device folder.
+  ///
+  /// Models are no longer downloaded by the engine (the v2.0 FFI binding has no
+  /// download layer). Stage them once with `adb push` into the ModelStore path
+  /// (see [ModelStore.modelDir]).
   Future<void> initialize({void Function(String)? onStatus}) async {
-    onStatus?.call('Downloading $currentModelId…');
-    _lm = CactusLM();
-    await _lm!.downloadModel(
-      model: currentModelId,
-      downloadProcessCallback: (progress, msg, isError) {
-        if (!isError) {
-          final pct = progress != null
-              ? ' (${(progress * 100).toStringAsFixed(0)}%)'
-              : '';
-          onStatus?.call('$msg$pct');
-        }
-      },
-    );
+    final path = await ModelStore.modelDir(currentModelId);
+    if (!await ModelStore.isStaged(currentModelId)) {
+      throw Exception(
+        'Model "$currentModelId" not found at $path. '
+        'Stage it with: adb push <model_dir> $path',
+      );
+    }
     onStatus?.call('Initializing $currentModelId…');
-    await _lm!.initializeModel();
+    final engine = CactusEngine()..init(path);
+    _engine = engine;
     onStatus?.call('Model ready: $currentModelId');
   }
 
@@ -80,24 +79,19 @@ class AgentService {
     final modelType = agentModelById(currentModelId).type;
     final sw = Stopwatch()..start();
     try {
-      final result = await _lm!.generateCompletion(
+      final result = _engine!.complete(
         messages: [
-          ChatMessage(content: systemPromptFor(modelType), role: 'system'),
-          ChatMessage(content: userMessage, role: 'user'),
+          {'role': 'system', 'content': systemPromptFor(modelType)},
+          {'role': 'user', 'content': userMessage},
         ],
-        params: CactusCompletionParams(
-          tools: buildAgentTools(),
-          maxTokens: 300,
-          temperature: 0.1,
-        ),
+        tools: buildAgentTools(),
+        maxTokens: 300,
+        temperature: 0.1,
       );
       sw.stop();
 
       final calls = result.toolCalls
-          .map((c) => AgentToolCall(
-                c.name,
-                Map<String, dynamic>.from(c.arguments),
-              ))
+          .map((c) => AgentToolCall(c.name, c.arguments))
           .toList();
 
       return AgentResult(
@@ -121,8 +115,8 @@ class AgentService {
 
   void _unload() {
     try {
-      _lm?.unload();
+      _engine?.dispose();
     } catch (_) {}
-    _lm = null;
+    _engine = null;
   }
 }

@@ -10,8 +10,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:cactus/cactus.dart';
 import 'benchmark_service.dart';
+import '../native/cactus_engine.dart';
+import '../native/model_store.dart';
 import '../tools/agent_tools.dart';
 
 class HeadlessBenchmarkRunner {
@@ -143,23 +144,20 @@ class HeadlessBenchmarkRunner {
       log('║ Starting: $modelName ($modelType)');
       log('╚════════════════════════════════════════════════════════════╝');
 
-      CactusLM? lm;
+      CactusEngine? lm;
 
       try {
-        // Initialize model
+        // Initialize model from its staged on-device folder (the v2.0 FFI
+        // binding has no download layer — stage via `adb push`).
         log('Initializing $modelName...');
-        lm = CactusLM();
-
-        await lm.downloadModel(
-          model: modelId,
-          downloadProcessCallback: (progress, statusMsg, isError) {
-            if (!isError && progress != null && progress % 0.1 < 0.01) {
-              log('  Downloading: ${(progress * 100).toStringAsFixed(0)}%');
-            }
-          },
-        );
-
-        await lm.initializeModel();
+        final modelPath = await ModelStore.modelDir(modelId);
+        if (!await ModelStore.isStaged(modelId)) {
+          throw Exception(
+            'Model "$modelId" not staged at $modelPath '
+            '(adb push <model_dir> $modelPath)',
+          );
+        }
+        lm = CactusEngine()..init(modelPath);
         log('✓ Model loaded successfully');
 
         // Get adaptive prompt
@@ -192,24 +190,16 @@ class HeadlessBenchmarkRunner {
           BenchmarkResult? result;
 
           try {
-            // Run inference with timeout
-            final messages = [
-              ChatMessage(content: systemPrompt, role: 'system'),
-              ChatMessage(content: userInput, role: 'user'),
-            ];
-            final response = await lm
-                .generateCompletion(
-                  messages: messages,
-                  params: CactusCompletionParams(
-                    tools: tools,
-                    maxTokens: 100,
-                    temperature: 0.1,
-                  ),
-                )
-                .timeout(
-                  const Duration(seconds: 30),
-                  onTimeout: () => throw TimeoutException('Inference timeout'),
-                );
+            // Run inference (synchronous FFI call into the native engine).
+            final response = lm.complete(
+              messages: [
+                {'role': 'system', 'content': systemPrompt},
+                {'role': 'user', 'content': userInput},
+              ],
+              tools: tools,
+              maxTokens: 100,
+              temperature: 0.1,
+            );
 
             final latency = DateTime.now().difference(startTime).inMilliseconds;
 
@@ -321,7 +311,7 @@ class HeadlessBenchmarkRunner {
         if (lm != null) {
           log('Unloading $modelName...');
           try {
-            lm.unload();
+            lm.dispose();
             log('✓ Model unloaded');
           } catch (e) {
             log('⚠ Unload error: $e');

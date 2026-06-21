@@ -30,10 +30,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cactus:
-    git:
-      url: https://github.com/cactus-compute/cactus-flutter.git
-      ref: main
+  # Cactus is no longer a pub/git package. The native engine (libcactus_engine.so,
+  # built from cactus v2.0) lives in android/app/src/main/jniLibs/arm64-v8a/ and is
+  # bound via dart:ffi through lib/native/cactus.dart, which needs the ffi package.
+  ffi: ^2.1.0
   permission_handler: ^12.0.1
   
   # Headless benchmark mode dependencies

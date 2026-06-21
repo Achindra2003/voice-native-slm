@@ -2,94 +2,50 @@
 // system prompts. Shared by the interactive agent (AgentService) and the
 // benchmark runner so the app behaves exactly as it is measured.
 
-import 'package:cactus/cactus.dart';
+/// One function-calling tool in the OpenAI-style schema the Cactus v2.0 engine
+/// expects as its `toolsJson`:
+/// `{"type":"function","function":{"name":..,"description":..,"parameters":{..}}}`
+Map<String, dynamic> _tool(
+  String name,
+  String description,
+  Map<String, Map<String, String>> properties,
+) {
+  return {
+    'type': 'function',
+    'function': {
+      'name': name,
+      'description': description,
+      'parameters': {
+        'type': 'object',
+        'properties': properties,
+        'required': properties.keys.toList(),
+      },
+    },
+  };
+}
 
-/// The six device-control functions the model may call.
-List<CactusTool> buildAgentTools() {
+/// The six device-control functions the model may call, as JSON-ready maps.
+List<Map<String, dynamic>> buildAgentTools() {
   return [
-    CactusTool(
-      name: 'setDoNotDisturb',
-      description: 'Enables Do Not Disturb mode for a specified duration.',
-      parameters: ToolParametersSchema(
-        properties: {
-          'durationMinutes': ToolParameter(
-            type: 'integer',
-            description: 'Duration in minutes.',
-            required: true,
-          ),
-        },
-      ),
-    ),
-    CactusTool(
-      name: 'toggleFlashlight',
-      description: 'Controls the device flashlight.',
-      parameters: ToolParametersSchema(
-        properties: {
-          'enable': ToolParameter(
-            type: 'boolean',
-            description: 'True to turn on, false to turn off.',
-            required: true,
-          ),
-        },
-      ),
-    ),
-    CactusTool(
-      name: 'setVolume',
-      description: 'Adjusts device volume.',
-      parameters: ToolParametersSchema(
-        properties: {
-          'volumePercent': ToolParameter(
-            type: 'integer',
-            description: 'Volume from 0-100.',
-            required: true,
-          ),
-        },
-      ),
-    ),
-    CactusTool(
-      name: 'setScreenBrightness',
-      description: 'Adjusts screen brightness.',
-      parameters: ToolParametersSchema(
-        properties: {
-          'brightnessPercent': ToolParameter(
-            type: 'integer',
-            description: 'Brightness from 0-100.',
-            required: true,
-          ),
-        },
-      ),
-    ),
-    CactusTool(
-      name: 'toggleWifi',
-      description: 'Enables or disables Wi-Fi.',
-      parameters: ToolParametersSchema(
-        properties: {
-          'enable': ToolParameter(
-            type: 'boolean',
-            description: 'True to enable, false to disable.',
-            required: true,
-          ),
-        },
-      ),
-    ),
-    CactusTool(
-      name: 'createRule',
-      description: 'Creates a contextual automation rule.',
-      parameters: ToolParametersSchema(
-        properties: {
-          'trigger': ToolParameter(
-            type: 'string',
-            description: 'Context trigger, e.g. "in class", "sleeping".',
-            required: true,
-          ),
-          'action': ToolParameter(
-            type: 'string',
-            description: 'Action to perform, e.g. "mute", "enable dnd".',
-            required: true,
-          ),
-        },
-      ),
-    ),
+    _tool('setDoNotDisturb', 'Enables Do Not Disturb mode for a specified duration.', {
+      'durationMinutes': {'type': 'integer', 'description': 'Duration in minutes.'},
+    }),
+    _tool('toggleFlashlight', 'Controls the device flashlight.', {
+      'enable': {'type': 'boolean', 'description': 'True to turn on, false to turn off.'},
+    }),
+    _tool('setVolume', 'Adjusts device volume.', {
+      'volumePercent': {'type': 'integer', 'description': 'Volume from 0-100.'},
+    }),
+    _tool('setScreenBrightness', 'Adjusts screen brightness.', {
+      'brightnessPercent': {'type': 'integer', 'description': 'Brightness from 0-100.'},
+    }),
+    _tool('toggleWifi', 'Enables or disables Wi-Fi.', {
+      'enable': {'type': 'boolean', 'description': 'True to enable, false to disable.'},
+    }),
+    _tool('createRule', 'Creates a contextual automation rule.', {
+      'trigger': {'type': 'string', 'description': 'Context trigger, e.g. "in class", "sleeping".'},
+      'action': {'type': 'string', 'description': 'Action to perform, e.g. "mute", "enable dnd".'},
+    }),
   ];
 }
 
