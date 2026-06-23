@@ -67,6 +67,12 @@ String systemPromptFor(String modelType) {
           '- "mute when in class" → createRule(trigger="in class", action="mute")\n'
           'Always call a function. Handle time expressions.';
 
+    case 'audio':
+      return 'Listen to the audio and call the matching device-control function. '
+          'Always call exactly one function with correct parameters. '
+          'Examples: heard "turn on flashlight"→toggleFlashlight(true), '
+          '"set volume 60"→setVolume(60).';
+
     case 'generalist':
     default:
       return 'You are an intelligent device control assistant with function '

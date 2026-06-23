@@ -51,7 +51,8 @@ class AgentService {
       );
     }
     onStatus?.call('Initializing $currentModelId…');
-    final engine = CactusEngine()..init(path);
+    final engine = CactusEngine();
+    await engine.init(path);
     _engine = engine;
     onStatus?.call('Model ready: $currentModelId');
   }
@@ -79,7 +80,7 @@ class AgentService {
     final modelType = agentModelById(currentModelId).type;
     final sw = Stopwatch()..start();
     try {
-      final result = _engine!.complete(
+      final result = await _engine!.complete(
         messages: [
           {'role': 'system', 'content': systemPromptFor(modelType)},
           {'role': 'user', 'content': userMessage},

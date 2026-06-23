@@ -30,4 +30,12 @@ class ModelStore {
     if (!await dir.exists()) return false;
     return dir.list().isEmpty.then((empty) => !empty);
   }
+
+  /// Directory where benchmark audio clips are stored (created on first use).
+  static Future<String> audioDir() async {
+    final base = await _base();
+    final dir = Directory('${base.path}/benchmark_audio');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir.path;
+  }
 }

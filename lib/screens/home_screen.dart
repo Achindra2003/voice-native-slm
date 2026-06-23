@@ -7,6 +7,7 @@ import '../tools/device_controls.dart';
 import '../widgets/metrics_panel.dart';
 import '../widgets/model_selector.dart';
 import '../widgets/onboarding_card.dart';
+import 'recording_screen.dart';
 
 /// The main interactive screen: pick a model, send a spoken/typed command,
 /// watch it map to a device action, and run the benchmark suite.
@@ -155,6 +156,14 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text('On-Device Voice Agent'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.mic),
+            tooltip: 'Record benchmark audio clips',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                  builder: (_) => const RecordingScreen()),
+            ),
+          ),
           if (_commandCount > 0)
             IconButton(
               icon: const Icon(Icons.restart_alt),
