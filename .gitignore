@@ -77,3 +77,9 @@ docs/
 .vscode/
 .idea/
 *.iml
+
+# scratch session logs / transcripts (never commit — may contain secrets)
+r.txt
+baton-*.txt
+final-plan.txt
+*.session.txt
