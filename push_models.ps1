@@ -16,8 +16,7 @@ $MAP = @{
   "qwen3-1.7"       = "qwen3-1.7b-cq4"
   "qwen3.5-0.8"     = "qwen3.5-0.8b-cq4"
   "qwen3.5-2b"      = "qwen3.5-2b-cq4"
-  "lfm2-audio-350m" = "lfm2-audio-350m-cq4"
-  "gemma-4-1b"      = "gemma-4-1b-it-cq4"
+  "gemma-4-e2b"     = "gemma-4-e2b-it-cq4" # audio-native arm (google/gemma-4-E2B-it)
   "lfm2-vl-450m"    = "lfm2-vl-450m-cq4"   # placeholder, already on device
 }
 

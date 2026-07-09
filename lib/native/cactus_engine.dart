@@ -133,28 +133,62 @@ class CactusEngine {
 
   /// Transcribe an audio file using a Whisper/audio model loaded via [init].
   /// Returns the raw transcript string. Throws on failure.
+  ///
+  /// Surfaces native failures instead of silently returning "": a failed
+  /// transcribe would otherwise yield an empty transcript and score WER 1.0 on
+  /// every clip, corrupting a whole benchmark run with no visible error.
   Future<String> transcribe(String audioFilePath) async {
     final model = _model;
     if (model == null || model == nullptr) {
       throw Exception('Model not initialized');
     }
     final modelAddress = model.address;
-    return Isolate.run(() {
+    final (rc, text, err) = await Isolate.run(() {
       final mdl = Pointer<Void>.fromAddress(modelAddress);
       final pathPtr = audioFilePath.toNativeUtf8();
       final promptPtr = ''.toNativeUtf8();
       const bufSize = 1 << 16; // 64 KB
       final buf = calloc<Int8>(bufSize);
       try {
-        cactusTranscribe(
-            mdl, pathPtr, promptPtr, buf.cast(), bufSize, nullptr, nullptr, nullptr, nullptr, 0);
-        return buf.cast<Utf8>().toDartString();
+        final rc = cactusTranscribe(mdl, pathPtr, promptPtr, buf.cast(),
+            bufSize, nullptr, nullptr, nullptr, nullptr, 0);
+        final text = buf.cast<Utf8>().toDartString();
+        String? err;
+        if (rc < 0 || text.trim().isEmpty) {
+          final ePtr = cactusGetLastError();
+          err = (ePtr == nullptr) ? null : ePtr.toDartString();
+        }
+        return (rc, text, err);
       } finally {
         calloc.free(pathPtr);
         calloc.free(promptPtr);
         calloc.free(buf);
       }
     });
+    if (rc < 0) {
+      throw Exception('cactus_transcribe failed (rc=$rc): ${err ?? 'unknown'}');
+    }
+    if (text.trim().isEmpty) {
+      throw Exception(
+        'cactus_transcribe produced no text for "$audioFilePath" (rc=$rc): '
+        '${err ?? 'is the Whisper bundle loaded and the clip non-empty?'}',
+      );
+    }
+    // The native layer fills the buffer with the same JSON envelope as
+    // cactus_complete ({"success":..,"response":"<transcript>",..}) — the
+    // transcript is its "response" field. Returning the raw buffer would feed
+    // the whole envelope to every pipeline model and score WER against it.
+    final trimmed = text.trim();
+    if (trimmed.startsWith('{')) {
+      try {
+        final m = jsonDecode(trimmed) as Map<String, dynamic>;
+        final r = m['response'];
+        if (r is String && r.trim().isNotEmpty) return r.trim();
+      } catch (_) {
+        // Not the JSON envelope after all — fall through to the raw text.
+      }
+    }
+    return text;
   }
 
   CactusCompletionResult _parse(String jsonStr) {

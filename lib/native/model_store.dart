@@ -31,10 +31,28 @@ class ModelStore {
     return dir.list().isEmpty.then((empty) => !empty);
   }
 
-  /// Directory where benchmark audio clips are stored (created on first use).
-  static Future<String> audioDir() async {
+  /// Directory where benchmark output files (CSV/JSON/MD, transcripts,
+  /// progress) are written, created on first use. Anchored to the same
+  /// adb-pullable external files dir as models and clips, so a bare relative
+  /// `results/` path — which has no writable CWD on Android — is never used.
+  static Future<String> resultsDir() async {
     final base = await _base();
-    final dir = Directory('${base.path}/benchmark_audio');
+    final dir = Directory('${base.path}/results');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir.path;
+  }
+
+  /// Directory where benchmark audio clips are stored (created on first use).
+  ///
+  /// [condition] separates recordings for different eval conditions (e.g. the
+  /// multilingual pilot's 'en' vs 'codeswitch' arms) so they don't overwrite
+  /// each other. Omitted/'en' keeps the original path for backward
+  /// compatibility with clips already recorded there.
+  static Future<String> audioDir({String? condition}) async {
+    final base = await _base();
+    final suffix =
+        (condition == null || condition == 'en') ? '' : '_$condition';
+    final dir = Directory('${base.path}/benchmark_audio$suffix');
     if (!await dir.exists()) await dir.create(recursive: true);
     return dir.path;
   }

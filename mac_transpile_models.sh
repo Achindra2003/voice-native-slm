@@ -2,17 +2,41 @@
 # =============================================================================
 #  Cactus model transpiler — RUN THIS ON AN APPLE SILICON MAC (M1/M2/M3/M4)
 # =============================================================================
-#  Produces runnable Cactus "components/" bundles for the 9 models that have no
-#  prebuilt bundle, pinned to the EXACT engine version on the target phone so
-#  the bundles load correctly. Each model is zipped into ~/cactus_bundles/.
+#  Produces runnable Cactus "components/" bundles, pinned to the EXACT engine
+#  version on the target phone so the bundles load correctly. Each model is
+#  zipped into ~/cactus_bundles/.
+#
+#  THIS RUN (2026-07-08): produces the TWO NEW Liquid 1.2B models —
+#  lfm2-1.2b-tool (function-calling specialist, replaces the dead functiongemma)
+#  and lfm2.5-1.2b (gen-2.5 instruct). Both are small (~2.4 GB download each)
+#  and quick to transpile. whisper-base and gemma-4-e2b are listed first but
+#  will [skip] automatically if their zips already exist in ~/cactus_bundles
+#  from the previous run — do NOT delete that folder.
+#  gemma-3n was removed — Cactus cannot transpile it. functiongemma-270m is
+#  NOT re-transpiled: a 2026-07-07 re-transpile produced a byte-identical
+#  (still unloadable) graph, so it's disabled in section 7.
+#
+#  HuggingFace auth: NOTHING in this run is gated — no HF login needed.
 #
 #  HOW TO RUN:
-#     1. Copy this file to the Mac (AirDrop / USB / email).
+#     1. Copy this file to the Mac — DELETE any older mac_transpile_models.sh
+#        in ~/Downloads first so you can't run a stale copy by mistake.
 #     2. Open Terminal, then:  bash ~/Downloads/mac_transpile_models.sh
-#     3. Wait (~30-90 min; it downloads ~15 GB of models + transpiles).
-#     4. Send back the whole  ~/cactus_bundles/  folder AND  ~/cactus_run.log
+#     3. Wait. The two Liquid models are ~2.4 GB download each and transpile
+#        in minutes. (whisper-base / gemma-4-e2b lines will print [skip].)
+#     4. Send back ONLY:  lfm2-1.2b-tool.zip, lfm2.5-1.2b.zip, cactus_run.log
+#        (do NOT re-send gemma-4-e2b.zip / whisper-base.zip — already have them)
 #
-#  It is safe to re-run — finished models are skipped, downloads are cached.
+#  It is safe to re-run — finished models are skipped, downloads are cached,
+#  and the clone/venv/engine-build steps skip themselves if already done.
+#  This run produces 2 NEW models: lfm2-1.2b-tool + lfm2.5-1.2b. The 8 text
+#  models and whisper-base/gemma-4-e2b from previous runs are already on the
+#  phone and are NOT rebuilt (their zips [skip] if still in ~/cactus_bundles).
+#
+#  NOTE ON WHISPER: Cactus lists Whisper as a supported STT family, so
+#  `cactus convert openai/whisper-base` should work. If that specific convert
+#  errors, say so in the reply — Whisper may need a different convert flag and
+#  we'll adjust.
 # =============================================================================
 set -u
 exec > >(tee "$HOME/cactus_run.log") 2>&1   # log everything
@@ -56,45 +80,106 @@ brew install cmake git python@3.12 >/dev/null 2>&1 || brew install cmake git pyt
 PY="$(command -v python3.12 || command -v python3)"
 echo "[ok] python: $PY ($($PY --version))"
 
-# --- 4. clone Cactus at the pinned commit ----------------------------------
+# --- 4. clone / verify Cactus at the pinned commit -------------------------
 mkdir -p "$WORK"; cd "$WORK"
-if [ ! -d cactus/.git ]; then
+if [ -d cactus/.git ] && git -C cactus rev-parse --verify --quiet "$CACTUS_COMMIT" >/dev/null 2>&1; then
+  echo "[ok] cactus already at correct commit"
+else
+  rm -rf cactus
   echo ">> Cloning cactus..."
   git clone https://github.com/cactus-compute/cactus.git
+  cd cactus
+  git checkout "$CACTUS_COMMIT" || { echo "!! Could not checkout $CACTUS_COMMIT"; exit 1; }
+  cd "$WORK"
 fi
 cd cactus
-git fetch --all --quiet
-git checkout "$CACTUS_COMMIT" || { echo "!! Could not checkout $CACTUS_COMMIT"; exit 1; }
 echo "[ok] cactus @ $(git rev-parse --short HEAD)"
 
 # --- 5. venv + python packages --------------------------------------------
-$PY -m venv "$WORK/venv"
-source "$WORK/venv/bin/activate"
-pip install -U pip wheel >/dev/null
-echo ">> Installing torch + transformers (a few minutes)..."
-pip install torch transformers safetensors numpy huggingface_hub tokenizers >/dev/null
-pip install -e python >/dev/null   # installs the 'cactus' CLI from this exact source
+if [ ! -f "$WORK/venv/bin/cactus" ]; then
+  $PY -m venv "$WORK/venv"
+  source "$WORK/venv/bin/activate"
+  pip install -U pip wheel >/dev/null
+  echo ">> Installing torch + transformers (a few minutes)..."
+  pip install torch transformers safetensors numpy huggingface_hub tokenizers >/dev/null
+  pip install -e python >/dev/null   # installs the 'cactus' CLI from this exact source
+else
+  source "$WORK/venv/bin/activate"
+fi
 echo "[ok] cactus CLI: $(command -v cactus || echo 'via python -m cactus')"
 
 run_cactus() { cactus "$@" 2>&1 || python -m cactus "$@" 2>&1; }
 
+# --- 5b. HuggingFace auth ----------------------------------------------------
+#  NOT NEEDED for this run: every model in the MODELS list below is public
+#  (LiquidAI/LFM2-1.2B-Tool, LiquidAI/LFM2.5-1.2B-Instruct, openai/whisper-base,
+#  google/gemma-4-E2B-it). If a token happens to be set we use it, but a 401 /
+#  "gated repo" error should never appear — if it does, the script was edited.
+if [ -n "${HF_TOKEN:-}" ]; then
+  export HUGGING_FACE_HUB_TOKEN="$HF_TOKEN"   # some tools read this name
+  huggingface-cli login --token "$HF_TOKEN" --add-to-git-credential >/dev/null 2>&1 || true
+  echo "[ok] HF token found in \$HF_TOKEN (not required for this run)"
+elif huggingface-cli whoami >/dev/null 2>&1; then
+  echo "[ok] HF auth: logged in as $(huggingface-cli whoami 2>/dev/null) (not required)"
+else
+  echo "[ok] no HF auth — fine, nothing in this run is gated"
+fi
+
 # --- 6. build the engine dylib (native ARM — the step that fails on x86) ----
-echo ">> Building cactus engine for this Mac..."
-run_cactus build --python | tail -5 || echo "(will let transpile auto-build the engine)"
+if [ -f "cactus-engine/build/libcactus_engine.dylib" ]; then
+  echo "[skip] engine already built"
+else
+  echo ">> Building cactus engine for this Mac..."
+  run_cactus build --python | tail -5 || echo "(will let transpile auto-build the engine)"
+fi
 
 # --- 7. transpile each model ----------------------------------------------
 mkdir -p "$OUT"
 # device-folder-name : HuggingFace id   (folder name = what we push to the phone)
+# THIS RUN builds only the two NEW Liquid 1.2B models at the bottom of the
+# list. whisper-base and gemma-4-e2b will [skip] (their zips already exist in
+# ~/cactus_bundles from previous runs). The 8 text models from the first run
+# are already on the phone — do NOT re-do them.
 MODELS=(
-  "lfm2-350m|LiquidAI/LFM2-350M"
-  "lfm2.5-350m|LiquidAI/LFM2.5-350M"
-  "lfm2-700m|LiquidAI/LFM2-700M"
-  "lfm2-1.2b|LiquidAI/LFM2-1.2B"
-  "qwen3-0.6|Qwen/Qwen3-0.6B"
-  "qwen3-1.7|Qwen/Qwen3-1.7B"
-  "qwen3.5-0.8|Qwen/Qwen3.5-0.8B"
-  "qwen3.5-2b|Qwen/Qwen3.5-2B"
-  "functiongemma-270m|google/functiongemma-270m-it"
+  # ---- HIGHEST PRIORITY: the STT model that unlocks the whole pipeline arm ----
+  # Whisper is the speech-recognition stage. Without it, NONE of the 9 text
+  # models already on the phone can be benchmarked. If you only have time for
+  # ONE model, do this one. Device folder name must stay 'whisper-base'.
+  "whisper-base|openai/whisper-base"
+  # ---- audio-native model (direct arm) ----
+  # gemma-4-e2b: audio encoder CONFIRMED (gemma4_audio in its config.json).
+  #   NOT gated. Single ~10 GB safetensors file (5.12B raw params, bf16).
+  # NOTE: gemma-3n-e2b was REMOVED (2026-07-05): Cactus's transpile pipeline
+  #   has no gemma3n adapter at ANY commit — "Cactus doesn't support it at this
+  #   engine commit" is correct and unfixable. Do not re-add it.
+  "gemma-4-e2b|google/gemma-4-E2B-it"
+  # ---- pipeline-arm SPECIALIST — DO NOT RE-TRANSPILE (proven dead end, 2026-07-07) ----
+  # functiongemma-270m fails cactus_init on the pinned v2.0 engine ("Failed to
+  # initialize model"). We ORIGINALLY thought this was a stale-converter/format
+  # issue and re-transpiled it with the CURRENT converter on 2026-07-07.
+  # RESULT: the fresh output was BYTE-IDENTICAL to the failing on-device bundle
+  # (components/decoder/graph.cactus md5 7f14af3a4b895f084b66f6ae0623e949, same
+  # 250872 bytes). So it is NOT a stale bundle:
+  #   - the converter emits a single monolithic components/decoder/ graph for
+  #     this 270M model (the multi-graph decoder_*_chunk layout is only produced
+  #     for larger/multimodal models), and
+  #   - the pinned engine simply can't init a single-decoder-component gemma3
+  #     bundle. Re-transpiling with the same converter can never change this.
+  # Re-enabling it here just re-downloads a GATED repo to reproduce the identical
+  # unloadable graph. Leave it OUT until the engine is upgraded to one that
+  # supports single-decoder bundles (or functiongemma is dropped from the paper).
+  # "functiongemma-270m|google/functiongemma-270m-it"   # disabled — see above
+  # ---- NEW (2026-07-08): the two Liquid 1.2B additions ----
+  # Both are Lfm2ForCausalLM — the exact architecture already proven to
+  # transpile AND load on the phone's v2.0 engine (lfm2-1.2b passed a live
+  # load test 2026-07-08). Neither repo is gated; no HF login needed. ~2.4 GB
+  # download each (bf16 1.2B), minutes to transpile — far quicker than gemma.
+  # lfm2-1.2b-tool: Liquid's function-calling specialist — replaces the dead
+  #   functiongemma as the paper's specialist model.
+  "lfm2-1.2b-tool|LiquidAI/LFM2-1.2B-Tool"
+  # lfm2.5-1.2b: generation-2.5 instruct at 1.2B — completes the LFM2-vs-2.5
+  #   generational comparison at a second size (we only had it at 350M).
+  "lfm2.5-1.2b|LiquidAI/LFM2.5-1.2B-Instruct"
 )
 
 OK_LIST=(); FAIL_LIST=()

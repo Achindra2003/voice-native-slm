@@ -83,3 +83,15 @@ r.txt
 baton-*.txt
 final-plan.txt
 *.session.txt
+
+# model bundle zips (GB-scale, live on disk / device, never in git)
+/*.zip
+
+# session transcripts & scratch (may contain secrets)
+read.txt
+dump.txt
+mac.txt
+progress.txt
+2026-*.txt
+ss.jpeg
+correct.sh

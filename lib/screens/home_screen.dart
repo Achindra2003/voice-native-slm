@@ -29,6 +29,30 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isBenchmarkRunning = false;
   bool _showOnboarding = true;
 
+  /// Which eval condition the Record button and benchmark run target.
+  /// 'main' = the 120-command English paper benchmark (default, unchanged
+  /// output files). 'pilot_en'/'pilot_cs' = the 12-command matched
+  /// multilingual pilot (English baseline vs Hinglish/Kanglish code-switch).
+  String _conditionKey = 'main';
+  static const Map<String, ({String label, String dataset, String tag})>
+      _conditions = {
+    'main': (
+      label: 'Main (English, 120)',
+      dataset: 'assets/realistic_dataset.json',
+      tag: 'en',
+    ),
+    'pilot_en': (
+      label: 'Pilot — English (12)',
+      dataset: 'assets/pilot_en.json',
+      tag: 'pilot_en',
+    ),
+    'pilot_cs': (
+      label: 'Pilot — Code-switched (12)',
+      dataset: 'assets/pilot_codeswitch.json',
+      tag: 'codeswitch',
+    ),
+  };
+
   int _commandCount = 0;
   int _successCount = 0;
   int _failCount = 0;
@@ -106,17 +130,102 @@ class _HomeScreenState extends State<HomeScreen> {
       _isBenchmarkRunning = true;
       _status = 'Starting benchmark…';
     });
+    final cond = _conditions[_conditionKey]!;
     try {
-      await HeadlessBenchmarkRunner.run(onProgress: _setStatus);
+      await HeadlessBenchmarkRunner.run(
+        onProgress: _setStatus,
+        datasetPath: cond.dataset,
+        condition: cond.tag,
+      );
       setState(() {
         _status = 'Benchmark complete.';
-        _response = 'Results saved to results/headless_benchmark_results.csv '
-            'and results/headless_benchmark_summary.md.';
+        _response = 'Results saved to results/headless_benchmark_results'
+            '${cond.tag == 'en' ? '' : '_${cond.tag}'}.csv and '
+            'results/headless_benchmark_summary'
+            '${cond.tag == 'en' ? '' : '_${cond.tag}'}.md.';
       });
     } catch (e) {
       setState(() {
         _status = 'Benchmark failed: $e';
         _response = 'Error during benchmark: $e';
+      });
+    } finally {
+      if (mounted) setState(() => _isBenchmarkRunning = false);
+    }
+  }
+
+  /// Quick end-to-end validation before committing to the multi-hour full run:
+  /// exercises Phase 1 (Whisper), Phase 2 (one text model) and Phase 3 (one
+  /// audio model) over 2 commands, reusing the recorded English clips but
+  /// writing to isolated *_smoke result files so the real run stays clean.
+  Future<void> _runSmokeTest() async {
+    if (_isBenchmarkRunning) return;
+    setState(() {
+      _isBenchmarkRunning = true;
+      _status = 'Smoke test: Whisper + 1 text + 1 audio model, 2 commands…';
+    });
+    try {
+      await HeadlessBenchmarkRunner.run(
+        onProgress: _setStatus,
+        // qwen3-0.6 (not functiongemma-270m) is the pipeline-arm probe: it uses
+        // the multi-component graph format the pinned engine can load.
+        // functiongemma-270m fails cactus_init: the converter emits it as a
+        // single-`decoder`-component bundle the pinned v2.0 engine can't init,
+        // and a 2026-07-07 re-transpile reproduced a byte-identical graph — so
+        // it's a dead end on this engine, not a stale bundle. Keep it out.
+        modelIds: const ['qwen3-0.6', 'gemma-4-e2b'],
+        commandsPerModel: 2,
+        condition: 'smoke',
+        audioCondition: 'en',
+      );
+      setState(() {
+        _status = 'Smoke test complete — check results/*_smoke files.';
+        _response = 'Both arms produced rows with no fatal error → the '
+            'pipeline is wired correctly and the full benchmark is safe to run.';
+      });
+    } catch (e) {
+      setState(() {
+        _status = 'Smoke test FAILED — fix before the full run.';
+        _response = 'Error: $e';
+      });
+    } finally {
+      if (mounted) setState(() => _isBenchmarkRunning = false);
+    }
+  }
+
+  /// One-command load probe of models not yet load-proven on the v2.0
+  /// engine, so the paper's pipeline-arm count rests on observed loads, not
+  /// bundle format. The original 8+1 set was verified 2026-07-08; the list
+  /// now targets the two Liquid 1.2B additions pushed 2026-07-09
+  /// (lfm2-1.2b-tool, lfm2.5-1.2b). functiongemma-270m stays excluded (see
+  /// the smoke-test note). Writes to isolated *_loadsweep result files; any
+  /// model that fails to init is listed in the thrown error.
+  Future<void> _runLoadSweep() async {
+    if (_isBenchmarkRunning) return;
+    setState(() {
+      _isBenchmarkRunning = true;
+      _status = 'Load sweep: 2 new models × 1 command…';
+    });
+    try {
+      await HeadlessBenchmarkRunner.run(
+        onProgress: _setStatus,
+        modelIds: const [
+          'lfm2-1.2b-tool',
+          'lfm2.5-1.2b',
+        ],
+        commandsPerModel: 1,
+        condition: 'loadsweep',
+        audioCondition: 'en',
+      );
+      setState(() {
+        _status = 'Load sweep complete — both new models loaded and ran.';
+        _response = 'lfm2-1.2b-tool and lfm2.5-1.2b initialized and produced '
+            'rows → the 10-model pipeline arm is fully load-verified.';
+      });
+    } catch (e) {
+      setState(() {
+        _status = 'Load sweep: some models FAILED to load.';
+        _response = 'Failures (other models still verified, rows saved): $e';
       });
     } finally {
       if (mounted) setState(() => _isBenchmarkRunning = false);
@@ -156,13 +265,47 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text('On-Device Voice Agent'),
         actions: [
+          DropdownButton<String>(
+            value: _conditionKey,
+            dropdownColor: Theme.of(context).colorScheme.surface,
+            underline: const SizedBox.shrink(),
+            items: _conditions.entries
+                .map((e) => DropdownMenuItem(
+                      value: e.key,
+                      child: Text(e.value.label,
+                          style: const TextStyle(fontSize: 12)),
+                    ))
+                .toList(),
+            onChanged: busy
+                ? null
+                : (key) {
+                    if (key != null) setState(() => _conditionKey = key);
+                  },
+          ),
           IconButton(
             icon: const Icon(Icons.mic),
             tooltip: 'Record benchmark audio clips',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                  builder: (_) => const RecordingScreen()),
-            ),
+            onPressed: () {
+              final cond = _conditions[_conditionKey]!;
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => RecordingScreen(
+                    datasetPath: cond.dataset,
+                    condition: cond.tag,
+                  ),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.bug_report),
+            tooltip: 'Smoke test (1 text + 1 audio model, 2 commands)',
+            onPressed: busy ? null : _runSmokeTest,
+          ),
+          IconButton(
+            icon: const Icon(Icons.playlist_add_check),
+            tooltip: 'Load sweep (2 new models × 1 command)',
+            onPressed: busy ? null : _runLoadSweep,
           ),
           if (_commandCount > 0)
             IconButton(

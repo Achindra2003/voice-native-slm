@@ -26,6 +26,10 @@ class BenchmarkResult {
   /// 'direct'   = clean input, no separate ASR stage.
   final String inputMode;
 
+  /// Eval condition, e.g. 'en' (English baseline) or 'codeswitch'
+  /// (Hinglish/Kanglish multilingual pilot). Defaults to 'en'.
+  final String condition;
+
   BenchmarkResult({
     required this.modelName,
     required this.command,
@@ -42,6 +46,7 @@ class BenchmarkResult {
     this.error,
     required this.wordErrorRate,
     this.inputMode = 'pipeline',
+    this.condition = 'en',
   });
 
   Map<String, dynamic> toJson() => {
@@ -60,6 +65,7 @@ class BenchmarkResult {
         'error': error ?? '',
         'word_error_rate': wordErrorRate,
         'input_mode': inputMode,
+        'condition': condition,
       };
 
   String toCsvRow() {
@@ -79,6 +85,7 @@ class BenchmarkResult {
       _escapeCsv(error ?? ''),
       wordErrorRate.toStringAsFixed(3),
       inputMode,
+      condition,
     ].join(',');
   }
 
@@ -92,7 +99,8 @@ class BenchmarkResult {
   static String csvHeader() {
     return 'model,command,transcribed_text,category,expected_function,'
         'expected_params,actual_function,actual_params,success,'
-        'correct_function,correct_params,latency_ms,error,word_error_rate,input_mode';
+        'correct_function,correct_params,latency_ms,error,word_error_rate,'
+        'input_mode,condition';
   }
 }
 
@@ -133,29 +141,30 @@ class TestCase {
 class BenchmarkDataset {
   /// Load the evaluation dataset, preferring bundled assets (deployed APK) and
   /// falling back to the local file system (development).
-  static Future<List<TestCase>> load() async {
-    final raw = await _loadRaw();
+  ///
+  /// [assetPath] defaults to the main English dataset; pass e.g.
+  /// 'assets/pilot_codeswitch.json' to load the multilingual pilot instead.
+  static Future<List<TestCase>> load(
+      [String assetPath = 'assets/realistic_dataset.json']) async {
+    final raw = await _loadRaw(assetPath);
     return raw
         .map((item) => TestCase.fromJson(item as Map<String, dynamic>))
         .toList();
   }
 
-  static Future<List<dynamic>> _loadRaw() async {
+  static Future<List<dynamic>> _loadRaw(String assetPath) async {
     try {
-      final content =
-          await rootBundle.loadString('assets/realistic_dataset.json');
+      final content = await rootBundle.loadString(assetPath);
       return jsonDecode(content) as List<dynamic>;
     } catch (_) {
-      for (final path in const [
-        'assets/realistic_dataset.json',
-        'results/realistic_dataset.json',
-      ]) {
+      final basename = assetPath.split('/').last;
+      for (final path in [assetPath, 'results/$basename']) {
         final file = File(path);
         if (await file.exists()) {
           return jsonDecode(await file.readAsString()) as List<dynamic>;
         }
       }
-      throw Exception('Dataset not found in assets or file system');
+      throw Exception('Dataset not found in assets or file system: $assetPath');
     }
   }
 }

@@ -6,12 +6,24 @@ import 'package:record/record.dart';
 import '../native/model_store.dart';
 import '../services/benchmark_service.dart';
 
-/// Records the 30 benchmark commands as 16 kHz mono WAV clips for the
+/// Records the benchmark commands as 16 kHz mono WAV clips for the
 /// audio-native pipeline. Files are saved to
-/// `<externalFilesDir>/benchmark_audio/<index>.wav` and read by the
-/// benchmark runner without re-recording.
+/// `<externalFilesDir>/benchmark_audio[_<condition>]/<index>.wav` and read by
+/// the benchmark runner without re-recording.
+///
+/// [datasetPath] + [condition] let this screen record for the English
+/// baseline (default) or the multilingual pilot (e.g. pass
+/// 'assets/pilot_codeswitch.json' + 'codeswitch') without clobbering the
+/// other condition's clips.
 class RecordingScreen extends StatefulWidget {
-  const RecordingScreen({super.key});
+  final String datasetPath;
+  final String condition;
+
+  const RecordingScreen({
+    super.key,
+    this.datasetPath = 'assets/realistic_dataset.json',
+    this.condition = 'en',
+  });
 
   @override
   State<RecordingScreen> createState() => _RecordingScreenState();
@@ -35,8 +47,8 @@ class _RecordingScreenState extends State<RecordingScreen> {
   }
 
   Future<void> _init() async {
-    final cases = await BenchmarkDataset.load();
-    final dir = await ModelStore.audioDir();
+    final cases = await BenchmarkDataset.load(widget.datasetPath);
+    final dir = await ModelStore.audioDir(condition: widget.condition);
     final limited = cases.take(30).toList();
     final recordedFlags = List.generate(
         limited.length, (i) => File('$dir/$i.wav').existsSync());
@@ -105,7 +117,8 @@ class _RecordingScreenState extends State<RecordingScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text('Record Commands ($recordedCount/$total)'),
+        title: Text(
+            'Record Commands — ${widget.condition} ($recordedCount/$total)'),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
