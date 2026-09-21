@@ -95,3 +95,19 @@ progress.txt
 2026-*.txt
 ss.jpeg
 correct.sh
+
+# Paper drafts, reports and slides — keep local until after the plagiarism check
+paper_v*.md
+paper_v*.tex
+paper_related_work.md
+literature_survey.md
+latex_paper/
+REWRITE_GUIDE.md
+check.txt
+*_report.html
+*.pptx
+RAC_Presentation.md
+
+# Research outputs from the v2 run and generated figures — keep local
+results_v2/
+figures/

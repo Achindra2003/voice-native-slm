@@ -164,12 +164,18 @@ class HeadlessBenchmarkRunner {
     List<TestCase> testCases,
     String audioDir,
     String condition,
-    void Function(String) log,
-  ) async {
-    final cached = await _loadTranscripts(testCases.length, condition);
+    void Function(String) log, [
+    String? transcriptCondition,
+  ]) async {
+    // Prefer the donor condition's cache when one is named (ablation runs);
+    // fall back to this condition's own cache. A fresh Whisper pass always
+    // saves under this condition, never the donor's.
+    final cacheSource = transcriptCondition ?? condition;
+    final cached = await _loadTranscripts(testCases.length, cacheSource);
     if (cached != null) {
       log('Reusing cached transcripts for ${cached.length} clips '
-          '(delete ${await _transcriptsFile(condition)} to re-run Whisper)');
+          "(condition '$cacheSource'; delete "
+          '${await _transcriptsFile(cacheSource)} to re-run Whisper)');
       return cached.take(testCases.length).toList();
     }
 
@@ -223,6 +229,21 @@ class HeadlessBenchmarkRunner {
     String datasetPath = 'assets/realistic_dataset.json',
     String condition = 'en',
     String? audioCondition,
+    // Ablation: run audio-native models down the pipeline (text) path, feeding
+    // them Whisper transcripts like every other pipeline model. Isolates
+    // architecture from model quality (same weights, different input modality).
+    bool treatAudioAsText = false,
+    // Reuse another condition's cached transcripts (e.g. the ablation replays
+    // the exact transcripts the original run measured, guaranteeing identical
+    // inputs even if Whisper isn't bit-deterministic across passes).
+    String? transcriptCondition,
+    // Prompt-fairness ablation: force one `systemPromptFor` key for every model
+    // in the run, overriding each model's own family prompt. The main study
+    // gave LFM models the terse 'liquid' prompt and Qwen models the far more
+    // detailed 'generalist' one, which confounds cross-family comparisons;
+    // re-running a model under the other family's prompt measures how much of
+    // the family gap the instructions account for. Null keeps normal behaviour.
+    String? promptOverride,
   }) async {
     final models =
         modelIds ?? availableModels.map((m) => m['id'] as String).toList();
@@ -236,12 +257,15 @@ class HeadlessBenchmarkRunner {
     log('=== Headless Benchmark Runner ===');
     log('Condition: $condition');
     log('Models: ${models.join(", ")}');
-    log('Commands per model: $commandLimit');
 
     log('Loading test dataset ($datasetPath)...');
     final testCases = await BenchmarkDataset.load(datasetPath);
     log('Loaded ${testCases.length} test cases');
     final limitedTestCases = testCases.take(commandLimit).toList();
+    // Report the count actually run, not the cap — a 12-command pilot capped
+    // at 30 must display "n/12", or the log reads like a Main run.
+    final testsPerModel = limitedTestCases.length;
+    log('Commands per model: $testsPerModel');
 
     // The recorded clips feed BOTH arms: Whisper (pipeline) and Gemma (direct).
     // Each condition gets its own audio subdir so e.g. the code-switched
@@ -253,14 +277,15 @@ class HeadlessBenchmarkRunner {
 
     // Phase 1 — transcribe with real Whisper, but only if a text (pipeline)
     // model is actually in this run.
-    final hasPipelineModel = models.any((id) =>
-        availableModels.firstWhere((m) => m['id'] == id,
-            orElse: () => {'type': 'audio'})['type'] !=
-        'audio');
+    final hasPipelineModel = treatAudioAsText ||
+        models.any((id) =>
+            availableModels.firstWhere((m) => m['id'] == id,
+                orElse: () => {'type': 'audio'})['type'] !=
+            'audio');
     List<_Transcript> transcripts = const [];
     if (hasPipelineModel) {
-      transcripts =
-          await _transcribeAll(limitedTestCases, audioDir, condition, log);
+      transcripts = await _transcribeAll(limitedTestCases, audioDir, condition,
+          log, transcriptCondition);
     }
 
     final progress = await loadProgress(condition);
@@ -279,7 +304,7 @@ class HeadlessBenchmarkRunner {
       final modelInfo = availableModels.firstWhere((m) => m['id'] == modelId);
       final modelName = modelInfo['name'] as String;
       final modelType = modelInfo['type'] as String;
-      final isAudioNative = modelType == 'audio';
+      final isAudioNative = modelType == 'audio' && !treatAudioAsText;
 
       log('');
       log('╔════════════════════════════════════════════════════════════╗');
@@ -299,18 +324,26 @@ class HeadlessBenchmarkRunner {
         await lm.init(modelPath);
         log('✓ Model loaded');
 
-        final systemPrompt = systemPromptFor(modelType);
+        final promptKey = promptOverride ??
+            (modelType == 'audio' && treatAudioAsText
+                ? 'audio-ablation'
+                : modelType);
+        final systemPrompt = systemPromptFor(promptKey);
+        if (promptOverride != null) {
+          log('  ⚠ Prompt override: using "$promptKey" prompt '
+              '(model\'s own type is "$modelType")');
+        }
 
         for (int i = 0; i < limitedTestCases.length; i++) {
           final testCase = limitedTestCases[i];
           final testId = '${modelId}_$i';
 
           if (completedTests.contains(testId)) {
-            log('  Skipping ${i + 1}/$commandLimit (already done)');
+            log('  Skipping ${i + 1}/$testsPerModel (already done)');
             continue;
           }
 
-          log('  Test ${i + 1}/$commandLimit: "${testCase.command}"');
+          log('  Test ${i + 1}/$testsPerModel: "${testCase.command}"');
 
           final startTime = DateTime.now();
           BenchmarkResult? result;

@@ -232,6 +232,131 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  /// Gemma pipeline-mode ablation: the audio-native model re-runs every
+  /// condition as a TEXT model, fed the exact cached Whisper transcripts the
+  /// pipeline arm was measured on. Same weights, two input modalities — the
+  /// within-model comparison that pins the architecture gap on the
+  /// architecture rather than on Gemma being a stronger model. Writes to
+  /// isolated *_ablation_* result files; resumable per condition like any run.
+  Future<void> _runGemmaAblation() async {
+    if (_isBenchmarkRunning) return;
+    setState(() {
+      _isBenchmarkRunning = true;
+      _status = 'Ablation: Gemma 4 E2B on Whisper transcripts (3 conditions)…';
+    });
+    const stages = [
+      (
+        dataset: 'assets/realistic_dataset.json',
+        condition: 'ablation_en',
+        source: 'en',
+      ),
+      (
+        dataset: 'assets/pilot_en.json',
+        condition: 'ablation_pilot_en',
+        source: 'pilot_en',
+      ),
+      (
+        dataset: 'assets/pilot_codeswitch.json',
+        condition: 'ablation_codeswitch',
+        source: 'codeswitch',
+      ),
+    ];
+    try {
+      for (final stage in stages) {
+        await HeadlessBenchmarkRunner.run(
+          onProgress: _setStatus,
+          modelIds: const ['gemma-4-e2b'],
+          datasetPath: stage.dataset,
+          condition: stage.condition,
+          // Clips only matter if the transcript cache is somehow missing and
+          // Whisper has to re-run; point at the source condition's recordings.
+          audioCondition: stage.source,
+          transcriptCondition: stage.source,
+          treatAudioAsText: true,
+        );
+      }
+      setState(() {
+        _status = 'Ablation complete — all 3 conditions.';
+        _response = 'Gemma 4 E2B ran 30+12+12 commands in pipeline (text) '
+            'mode. Results in results/*_ablation_* files — pull and compare '
+            'against its direct-audio rows.';
+      });
+    } catch (e) {
+      setState(() {
+        _status = 'Ablation stopped early — safe to re-tap to resume.';
+        _response = 'Error: $e';
+      });
+    } finally {
+      if (mounted) setState(() => _isBenchmarkRunning = false);
+    }
+  }
+
+  /// Prompt-fairness ablation. The main study prompted by model family: LFM
+  /// models got the terse 'liquid' prompt, Qwen models the much more detailed
+  /// 'generalist' one (numbered reasoning steps, a synonym table, explicit
+  /// unit-conversion and context-mapping rules). That asymmetry confounds every
+  /// cross-family claim — the Qwen-prompted group outscored the LFM-prompted
+  /// group by 12.5 pp, exactly the direction the prompt gap predicts.
+  ///
+  /// This swaps the prompts and re-runs on the SAME cached Whisper transcripts
+  /// the Main condition was scored on, so the only manipulated variable is the
+  /// instruction text. If scores barely move, the family gap is real and the
+  /// paper's cross-family claims stand; if LFM jumps under that prompt, they
+  /// need rewriting. Isolated *_promptswap_* result files; nothing existing is
+  /// touched, and it is resumable like any other run.
+  Future<void> _runPromptSwap() async {
+    if (_isBenchmarkRunning) return;
+    setState(() {
+      _isBenchmarkRunning = true;
+      _status = 'Prompt-fairness ablation: 3 models × 30 commands…';
+    });
+    // ~15 min total: LFM2-350M 8.4 s + LFM2.5-350M 7.8 s + Qwen3-0.6B 13.9 s
+    // median per command. Deliberately the three fastest models in the set.
+    const stages = [
+      // LFM models given Qwen's detailed prompt — does the scaffolding lift them?
+      (
+        condition: 'promptswap_lfm_as_generalist',
+        models: ['lfm2-350m', 'lfm2.5-350m'],
+        prompt: 'generalist',
+      ),
+      // Qwen given LFM's terse prompt — does removing the scaffolding hurt it?
+      (
+        condition: 'promptswap_qwen_as_liquid',
+        models: ['qwen3-0.6'],
+        prompt: 'liquid',
+      ),
+    ];
+    try {
+      for (final stage in stages) {
+        await HeadlessBenchmarkRunner.run(
+          onProgress: _setStatus,
+          modelIds: stage.models,
+          datasetPath: 'assets/realistic_dataset.json',
+          condition: stage.condition,
+          // Replay the Main run's exact transcripts so the ONLY difference from
+          // the original measurement is the system prompt.
+          audioCondition: 'en',
+          transcriptCondition: 'en',
+          promptOverride: stage.prompt,
+        );
+      }
+      setState(() {
+        _status = 'Prompt-swap complete — 3 models.';
+        _response = 'LFM2-350M and LFM2.5-350M ran with the generalist prompt; '
+            'Qwen3-0.6B ran with the liquid prompt. Results in '
+            'results/*_promptswap_* files — pull and compare against their '
+            'Main-condition rows (20.0%, 36.7%, 23.3%).';
+      });
+    } catch (e) {
+      setState(() {
+        _status = 'Prompt-swap stopped early — safe to re-tap to resume.';
+        _response = 'Error: $e';
+      });
+    } finally {
+      if (mounted) setState(() => _isBenchmarkRunning = false);
+    }
+  }
+
   Future<void> _showRules() async {
     final exec = await _executor.execute('listRules', const {});
     setState(() {
@@ -297,22 +422,73 @@ class _HomeScreenState extends State<HomeScreen> {
               );
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.bug_report),
-            tooltip: 'Smoke test (1 text + 1 audio model, 2 commands)',
-            onPressed: busy ? null : _runSmokeTest,
+          // Benchmark/diagnostic runs live in an overflow menu: as icon buttons
+          // they overflowed the app bar on phone widths and the last one added
+          // was silently clipped off-screen. Labels also beat guessing icons.
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'Benchmark runs',
+            enabled: !busy,
+            onSelected: (v) {
+              switch (v) {
+                case 'smoke':
+                  _runSmokeTest();
+                case 'sweep':
+                  _runLoadSweep();
+                case 'ablation':
+                  _runGemmaAblation();
+                case 'promptswap':
+                  _runPromptSwap();
+                case 'reset':
+                  _resetMetrics();
+              }
+            },
+            itemBuilder: (_) => [
+              const PopupMenuItem(
+                value: 'promptswap',
+                child: ListTile(
+                  leading: Icon(Icons.swap_horiz),
+                  title: Text('Prompt-fairness swap'),
+                  subtitle: Text('3 models × 30 cmds, ~15 min'),
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'ablation',
+                child: ListTile(
+                  leading: Icon(Icons.science),
+                  title: Text('Gemma transcript ablation'),
+                  subtitle: Text('30+12+12 commands'),
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: 'smoke',
+                child: ListTile(
+                  leading: Icon(Icons.bug_report),
+                  title: Text('Smoke test'),
+                  subtitle: Text('2 models × 2 commands'),
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'sweep',
+                child: ListTile(
+                  leading: Icon(Icons.playlist_add_check),
+                  title: Text('Load sweep'),
+                  subtitle: Text('2 models × 1 command'),
+                ),
+              ),
+              if (_commandCount > 0) ...[
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: 'reset',
+                  child: ListTile(
+                    leading: Icon(Icons.restart_alt),
+                    title: Text('Reset metrics'),
+                  ),
+                ),
+              ],
+            ],
           ),
-          IconButton(
-            icon: const Icon(Icons.playlist_add_check),
-            tooltip: 'Load sweep (2 new models × 1 command)',
-            onPressed: busy ? null : _runLoadSweep,
-          ),
-          if (_commandCount > 0)
-            IconButton(
-              icon: const Icon(Icons.restart_alt),
-              tooltip: 'Reset metrics',
-              onPressed: _resetMetrics,
-            ),
         ],
       ),
       body: SingleChildScrollView(

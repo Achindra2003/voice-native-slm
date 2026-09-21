@@ -73,6 +73,16 @@ String systemPromptFor(String modelType) {
           'Examples: heard "turn on flashlight"→toggleFlashlight(true), '
           '"set volume 60"→setVolume(60).';
 
+    // Ablation arm: an audio-native model fed Whisper transcripts as text.
+    // Must stay the word-for-word twin of the 'audio' prompt (only the
+    // modality clause differs) so the within-model comparison isolates the
+    // input modality, not the instructions.
+    case 'audio-ablation':
+      return 'Read the command and call the matching device-control function. '
+          'Always call exactly one function with correct parameters. '
+          'Examples: read "turn on flashlight"→toggleFlashlight(true), '
+          '"set volume 60"→setVolume(60).';
+
     case 'generalist':
     default:
       return 'You are an intelligent device control assistant with function '
