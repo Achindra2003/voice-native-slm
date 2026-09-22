@@ -67,6 +67,31 @@ Results are written after every command (a crashed run resumes), to the app's ex
 
 Each row records the input mode (`pipeline` or `direct`), the transcript and its word error rate, the expected vs. actual function and parameters, and latency.
 
+## Study data
+
+[`results_v2/`](results_v2/) holds the per-trial results of the study, pulled from the test phone:
+
+| Folder | Contents |
+|--------|----------|
+| `main_en/` | Main condition: 30 English commands × 11 systems, plus the cached Whisper transcripts |
+| `pilot_en/`, `pilot_cs/` | 12-intent pilot, English and code-switched (Hinglish/Kanglish) |
+| `ablation/` | Gemma 4 E2B fed the cached Whisper transcripts as text (within-model ablation) |
+| `promptswap/` | Prompt-fairness control (models run under the other family's system prompt) |
+| `analysis/` | Analysis scripts and their outputs |
+
+To reproduce every table, statistic and figure from the raw results:
+
+```bash
+cd results_v2/analysis
+python build_dataset.py      # -> all_rows.csv (648 trials, recomputed WER)
+python run_stats.py          # -> stats.json (McNemar, Cochran's Q, sign tests, CIs, ...)
+python taxonomy.py           # -> failure_taxonomy.csv
+python make_tables.py        # -> tables.md
+python generate_figures.py   # -> figures/
+```
+
+The voice recordings are not included in the repository.
+
 ## Project structure
 
 ```

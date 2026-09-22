@@ -108,6 +108,8 @@ check.txt
 *.pptx
 RAC_Presentation.md
 
-# Research outputs from the v2 run and generated figures — keep local
-results_v2/
+# Figure files (regenerate with results_v2/analysis/generate_figures.py)
 figures/
+
+# Paper to-do list (paper text, keep local)
+PAPER_FIXES.md

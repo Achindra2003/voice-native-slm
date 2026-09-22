@@ -1,0 +1,145 @@
+model,command,transcribed_text,category,expected_function,expected_params,actual_function,actual_params,success,correct_function,correct_params,latency_ms,error,word_error_rate,input_mode,condition
+LFM2 1.2B Tool,Turn on the flashlight,Going on the flashlight.,device_control,toggleFlashlight,"{""enable"":true}",toggleFlashlight,"{""enable"":true}",1,1,1,17417,,0.250,pipeline,pilot_en
+LFM2 1.2B Tool,Turn off the flashlight,Turn off the flashlight.,device_control,toggleFlashlight,"{""enable"":false}",toggleFlashlight,"{""enable"":false}",1,1,1,16441,,0.000,pipeline,pilot_en
+LFM2 1.2B Tool,Enable wifi,Enable Wi-Fi.,device_control,toggleWifi,"{""enable"":true}",toggleWifi,"{""enable"":true}",1,1,1,15910,,1.000,pipeline,pilot_en
+LFM2 1.2B Tool,Turn off wifi,Don't off lifefire.,device_control,toggleWifi,"{""enable"":false}",,{},0,0,0,22941,"No tool calls generated; raw: ""I understand you want to prevent lifefire from turning on. Unfortunately, I don't have a specific tool to directly disable lifefire. However, I can help you create a rule that might achieve a similar effect. Would you like me to create a rule that triggers when you're in a specific context (e.g., ""i…""",0.667,pipeline,pilot_en
+LFM2 1.2B Tool,Set volume to 50 percent,Set volume to 50%,device_control,setVolume,"{""volumePercent"":50}",setVolume,"{""volumePercent"":50}",1,1,1,16463,,0.200,pipeline,pilot_en
+LFM2 1.2B Tool,Set volume to maximum,Set volume to maximum.,device_control,setVolume,"{""volumePercent"":100}",setVolume,"{""volumePercent"":100}",1,1,1,17127,,0.000,pipeline,pilot_en
+LFM2 1.2B Tool,Set brightness to 70 percent,Set Rightness to 70%,device_control,setScreenBrightness,"{""brightnessPercent"":70}",,{},0,0,0,20869,"No tool calls generated; raw: ""I am sorry, I do not have a tool to directly set the ""Rightness"" value. However, I can help you automate actions that might indirectly influence Rightness. For example, I can create a rule to mute notifications when Rightness is high, or adjust screen brightness to reduce distractions. Would you lik…""",0.400,pipeline,pilot_en
+LFM2 1.2B Tool,Dim the screen to 20 percent,Then the screen to 20%.,device_control,setScreenBrightness,"{""brightnessPercent"":20}",setScreenBrightness,"{""brightnessPercent"":20}",1,1,1,16790,,0.333,pipeline,pilot_en
+LFM2 1.2B Tool,Enable do not disturb for 30 minutes,Enable do not disturb for 30 minutes.,automation,setDoNotDisturb,"{""durationMinutes"":30}",setDoNotDisturb,"{""durationMinutes"":30}",1,1,1,16815,,0.000,pipeline,pilot_en
+LFM2 1.2B Tool,Silence my phone for 2 hours,Silence my phone for two hours.,automation,setDoNotDisturb,"{""durationMinutes"":120}",setDoNotDisturb,"{""durationMinutes"":120}",1,1,1,16551,,0.167,pipeline,pilot_en
+LFM2 1.2B Tool,Mute notifications when I am in class,Mute notifications when I'm in class.,automation,createRule,"{""trigger"":""in class"",""action"":""mute""}",setDoNotDisturb,"{""durationMinutes"":60}",0,0,0,16831,,0.286,pipeline,pilot_en
+LFM2 1.2B Tool,Set volume to 30 percent,set volume to 30%,device_control,setVolume,"{""volumePercent"":30}",setVolume,"{""volumePercent"":30}",1,1,1,16357,,0.200,pipeline,pilot_en
+LFM2 350M,Turn on the flashlight,Going on the flashlight.,device_control,toggleFlashlight,"{""enable"":true}",setDoNotDisturb,"{""enable"":true}",0,0,1,6731,,0.250,pipeline,pilot_en
+LFM2 350M,Turn off the flashlight,Turn off the flashlight.,device_control,toggleFlashlight,"{""enable"":false}",setDoNotDisturb,"{""enable"":false}",0,0,1,6451,,0.000,pipeline,pilot_en
+LFM2 350M,Enable wifi,Enable Wi-Fi.,device_control,toggleWifi,"{""enable"":true}",toggleWifi,"{""enable"":true}",1,1,1,6297,,1.000,pipeline,pilot_en
+LFM2 350M,Turn off wifi,Don't off lifefire.,device_control,toggleWifi,"{""enable"":false}",setDoNotDisturb,"{""trigger"":""lifefire""}",0,0,0,6666,,0.667,pipeline,pilot_en
+LFM2 350M,Set volume to 50 percent,Set volume to 50%,device_control,setVolume,"{""volumePercent"":50}",setVolume,"{""volumePercent"":50}",1,1,1,6722,,0.200,pipeline,pilot_en
+LFM2 350M,Set volume to maximum,Set volume to maximum.,device_control,setVolume,"{""volumePercent"":100}",setVolume,"{""volumePercent"":100}",1,1,1,6646,,0.000,pipeline,pilot_en
+LFM2 350M,Set brightness to 70 percent,Set Rightness to 70%,device_control,setScreenBrightness,"{""brightnessPercent"":70}",setVolume,"{""volumePercent"":70,""targetVolume"":70}",0,0,0,6935,,0.400,pipeline,pilot_en
+LFM2 350M,Dim the screen to 20 percent,Then the screen to 20%.,device_control,setScreenBrightness,"{""brightnessPercent"":20}",setScreenBrightness,"{""brightnessPercent"":20}",1,1,1,6814,,0.333,pipeline,pilot_en
+LFM2 350M,Enable do not disturb for 30 minutes,Enable do not disturb for 30 minutes.,automation,setDoNotDisturb,"{""durationMinutes"":30}",setDoNotDisturb,"{""durationMinutes"":30}",1,1,1,6614,,0.000,pipeline,pilot_en
+LFM2 350M,Silence my phone for 2 hours,Silence my phone for two hours.,automation,setDoNotDisturb,"{""durationMinutes"":120}",setDoNotDisturb,"{""durationMinutes"":120}",1,1,1,6698,,0.167,pipeline,pilot_en
+LFM2 350M,Mute notifications when I am in class,Mute notifications when I'm in class.,automation,createRule,"{""trigger"":""in class"",""action"":""mute""}",setDoNotDisturb,"{""trigger"":""in class"",""action"":""mute""}",0,0,1,6860,,0.286,pipeline,pilot_en
+LFM2 350M,Set volume to 30 percent,set volume to 30%,device_control,setVolume,"{""volumePercent"":30}",setVolume,"{""volumePercent"":30}",1,1,1,6453,,0.200,pipeline,pilot_en
+LFM2.5 350M,Turn on the flashlight,Going on the flashlight.,device_control,toggleFlashlight,"{""enable"":true}",toggleFlashlight,"{""enable"":true}",1,1,1,6782,,0.250,pipeline,pilot_en
+LFM2.5 350M,Turn off the flashlight,Turn off the flashlight.,device_control,toggleFlashlight,"{""enable"":false}",toggleFlashlight,"{""enable"":false}",1,1,1,6531,,0.000,pipeline,pilot_en
+LFM2.5 350M,Enable wifi,Enable Wi-Fi.,device_control,toggleWifi,"{""enable"":true}",toggleWifi,"{""enable"":true}",1,1,1,6392,,1.000,pipeline,pilot_en
+LFM2.5 350M,Turn off wifi,Don't off lifefire.,device_control,toggleWifi,"{""enable"":false}",setDoNotDisturb,"{""durationMinutes"":60}",0,0,0,6548,,0.667,pipeline,pilot_en
+LFM2.5 350M,Set volume to 50 percent,Set volume to 50%,device_control,setVolume,"{""volumePercent"":50}",setVolume,"{""volumePercent"":50}",1,1,1,6522,,0.200,pipeline,pilot_en
+LFM2.5 350M,Set volume to maximum,Set volume to maximum.,device_control,setVolume,"{""volumePercent"":100}",setVolume,"{""volumePercent"":100}",1,1,1,6720,,0.000,pipeline,pilot_en
+LFM2.5 350M,Set brightness to 70 percent,Set Rightness to 70%,device_control,setScreenBrightness,"{""brightnessPercent"":70}",setDoNotDisturb,"{""durationMinutes"":60}",0,0,0,6907,,0.400,pipeline,pilot_en
+LFM2.5 350M,Dim the screen to 20 percent,Then the screen to 20%.,device_control,setScreenBrightness,"{""brightnessPercent"":20}",setScreenBrightness,"{""brightnessPercent"":20}",1,1,1,6565,,0.333,pipeline,pilot_en
+LFM2.5 350M,Enable do not disturb for 30 minutes,Enable do not disturb for 30 minutes.,automation,setDoNotDisturb,"{""durationMinutes"":30}",setDoNotDisturb,"{""durationMinutes"":30}",1,1,1,6623,,0.000,pipeline,pilot_en
+LFM2.5 350M,Silence my phone for 2 hours,Silence my phone for two hours.,automation,setDoNotDisturb,"{""durationMinutes"":120}",setDoNotDisturb,"{""durationMinutes"":7200}",0,1,0,6692,,0.167,pipeline,pilot_en
+LFM2.5 350M,Mute notifications when I am in class,Mute notifications when I'm in class.,automation,createRule,"{""trigger"":""in class"",""action"":""mute""}",createRule,"{""trigger"":""in class"",""action"":""mute""}",1,1,1,6687,,0.286,pipeline,pilot_en
+LFM2.5 350M,Set volume to 30 percent,set volume to 30%,device_control,setVolume,"{""volumePercent"":30}",setVolume,"{""volumePercent"":30}",1,1,1,6453,,0.200,pipeline,pilot_en
+LFM2 700M,Turn on the flashlight,Going on the flashlight.,device_control,toggleFlashlight,"{""enable"":true}",toggleFlashlight,"{""enable"":true}",1,1,1,13725,,0.250,pipeline,pilot_en
+LFM2 700M,Turn off the flashlight,Turn off the flashlight.,device_control,toggleFlashlight,"{""enable"":false}",,{},0,0,0,16270,"No tool calls generated; raw: ""I'm sorry, I don't have a tool to directly turn off the flashlight. However, I can toggle the flashlight on and off using the `toggleFlashlight` tool. Would you like me to do that? I can also adjust the volume or set the screen brightness if you need.""",0.000,pipeline,pilot_en
+LFM2 700M,Enable wifi,Enable Wi-Fi.,device_control,toggleWifi,"{""enable"":true}",toggleWifi,"{""enable"":true}",1,1,1,12586,,1.000,pipeline,pilot_en
+LFM2 700M,Turn off wifi,Don't off lifefire.,device_control,toggleWifi,"{""enable"":false}",setDoNotDisturb,"{""durationMinutes"":60}",0,0,0,12837,,0.667,pipeline,pilot_en
+LFM2 700M,Set volume to 50 percent,Set volume to 50%,device_control,setVolume,"{""volumePercent"":50}",setVolume,"{""volumePercent"":50}",1,1,1,12573,,0.200,pipeline,pilot_en
+LFM2 700M,Set volume to maximum,Set volume to maximum.,device_control,setVolume,"{""volumePercent"":100}",setVolume,"{""volumePercent"":100}",1,1,1,12607,,0.000,pipeline,pilot_en
+LFM2 700M,Set brightness to 70 percent,Set Rightness to 70%,device_control,setScreenBrightness,"{""brightnessPercent"":70}",,{},0,0,0,15299,"No tool calls generated; raw: ""I'm sorry, I don't have a tool to directly set Rightness to 70%. However, I can adjust the volume or screen brightness if that might be helpful. I can also control the flashlight or Wi-Fi if you'd like. Let me know if any of those options are useful!""",0.400,pipeline,pilot_en
+LFM2 700M,Dim the screen to 20 percent,Then the screen to 20%.,device_control,setScreenBrightness,"{""brightnessPercent"":20}",setScreenBrightness,"{""brightnessPercent"":20}",1,1,1,13031,,0.333,pipeline,pilot_en
+LFM2 700M,Enable do not disturb for 30 minutes,Enable do not disturb for 30 minutes.,automation,setDoNotDisturb,"{""durationMinutes"":30}",setDoNotDisturb,"{""durationMinutes"":30}",1,1,1,13240,,0.000,pipeline,pilot_en
+LFM2 700M,Silence my phone for 2 hours,Silence my phone for two hours.,automation,setDoNotDisturb,"{""durationMinutes"":120}",setDoNotDisturb,"{""durationMinutes"":120}",1,1,1,12877,,0.167,pipeline,pilot_en
+LFM2 700M,Mute notifications when I am in class,Mute notifications when I'm in class.,automation,createRule,"{""trigger"":""in class"",""action"":""mute""}",setDoNotDisturb,"{""durationMinutes"":60}",0,0,0,13028,,0.286,pipeline,pilot_en
+LFM2 700M,Set volume to 30 percent,set volume to 30%,device_control,setVolume,"{""volumePercent"":30}",setVolume,"{""volumePercent"":30}",1,1,1,12615,,0.200,pipeline,pilot_en
+LFM2 1.2B,Turn on the flashlight,Going on the flashlight.,device_control,toggleFlashlight,"{""enable"":true}",setDoNotDisturb,"{""durationMinutes"":30}",0,0,0,20159,,0.250,pipeline,pilot_en
+LFM2 1.2B,Turn off the flashlight,Turn off the flashlight.,device_control,toggleFlashlight,"{""enable"":false}",setDoNotDisturb,"{""durationMinutes"":0}",0,0,0,19048,,0.000,pipeline,pilot_en
+LFM2 1.2B,Enable wifi,Enable Wi-Fi.,device_control,toggleWifi,"{""enable"":true}",setDoNotDisturb,"{""durationMinutes"":0}",0,0,0,19040,,1.000,pipeline,pilot_en
+LFM2 1.2B,Turn off wifi,Don't off lifefire.,device_control,toggleWifi,"{""enable"":false}",,{},0,0,0,26722,"No tool calls generated; raw: ""I am sorry, I do not have a tool to directly turn off lifefire. However, depending on the context, I might be able to help indirectly. For example, if lifefire is related to a device or application I can control, I could potentially use tools like `toggleWifi` or `setScreenBrightness` if it's connec…""",0.667,pipeline,pilot_en
+LFM2 1.2B,Set volume to 50 percent,Set volume to 50%,device_control,setVolume,"{""volumePercent"":50}",setDoNotDisturb,"{""durationMinutes"":30}",0,0,0,20040,,0.200,pipeline,pilot_en
+LFM2 1.2B,Set volume to maximum,Set volume to maximum.,device_control,setVolume,"{""volumePercent"":100}",setDoNotDisturb,"{""durationMinutes"":0}",0,0,0,20074,,0.000,pipeline,pilot_en
+LFM2 1.2B,Set brightness to 70 percent,Set Rightness to 70%,device_control,setScreenBrightness,"{""brightnessPercent"":70}",,{},0,0,0,27118,"No tool calls generated; raw: ""I am sorry, I do not have a tool to directly set Rightness. However, I can control some devices that might indirectly influence it. For example, I could potentially use the `setScreenBrightness` or `setVolume` tools to create an atmosphere that might feel more aligned with a higher Rightness, but th…""",0.400,pipeline,pilot_en
+LFM2 1.2B,Dim the screen to 20 percent,Then the screen to 20%.,device_control,setScreenBrightness,"{""brightnessPercent"":20}",setScreenBrightness,"{""brightnessPercent"":20}",1,1,1,20313,,0.333,pipeline,pilot_en
+LFM2 1.2B,Enable do not disturb for 30 minutes,Enable do not disturb for 30 minutes.,automation,setDoNotDisturb,"{""durationMinutes"":30}",setDoNotDisturb,"{""durationMinutes"":30}",1,1,1,20607,,0.000,pipeline,pilot_en
+LFM2 1.2B,Silence my phone for 2 hours,Silence my phone for two hours.,automation,setDoNotDisturb,"{""durationMinutes"":120}",setDoNotDisturb,"{""durationMinutes"":120}",1,1,1,21268,,0.167,pipeline,pilot_en
+LFM2 1.2B,Mute notifications when I am in class,Mute notifications when I'm in class.,automation,createRule,"{""trigger"":""in class"",""action"":""mute""}",setDoNotDisturb,"{""durationMinutes"":60}",0,0,0,20189,,0.286,pipeline,pilot_en
+LFM2 1.2B,Set volume to 30 percent,set volume to 30%,device_control,setVolume,"{""volumePercent"":30}",setDoNotDisturb,"{""durationMinutes"":30}",0,0,0,19911,,0.200,pipeline,pilot_en
+LFM2.5 1.2B,Turn on the flashlight,Going on the flashlight.,device_control,toggleFlashlight,"{""enable"":true}",toggleFlashlight,"{""enable"":true}",1,1,1,21144,,0.250,pipeline,pilot_en
+LFM2.5 1.2B,Turn off the flashlight,Turn off the flashlight.,device_control,toggleFlashlight,"{""enable"":false}",,{},0,0,0,22839,"No tool calls generated; raw: ""I'm sorry, but I can't turn off the flashlight. The available API functions allow me to control the flashlight's on/off state, but not to adjust its brightness or perform other actions.""",0.000,pipeline,pilot_en
+LFM2.5 1.2B,Enable wifi,Enable Wi-Fi.,device_control,toggleWifi,"{""enable"":true}",toggleWifi,"{""enable"":true}",1,1,1,20206,,1.000,pipeline,pilot_en
+LFM2.5 1.2B,Turn off wifi,Don't off lifefire.,device_control,toggleWifi,"{""enable"":false}",,{},0,0,0,23431,"No tool calls generated; raw: ""I'm sorry, but I can't disable lifefire. The available API functions allow me to control features like Do Not Disturb, screen brightness, volume, and Wi-Fi, but not to turn off lifefire. Let me know if you'd like help with any of those features.""",0.667,pipeline,pilot_en
+LFM2.5 1.2B,Set volume to 50 percent,Set volume to 50%,device_control,setVolume,"{""volumePercent"":50}",setVolume,"{""volumePercent"":50}",1,1,1,20705,,0.200,pipeline,pilot_en
+LFM2.5 1.2B,Set volume to maximum,Set volume to maximum.,device_control,setVolume,"{""volumePercent"":100}",,{},0,0,0,23073,"No tool calls generated; raw: ""I'm sorry, but I can't set the volume to maximum. The available API functions allow adjusting volume to a specific percentage (0-100), but not to the maximum or minimum. Let me know if you'd like to adjust the volume to a specific level.""",0.000,pipeline,pilot_en
+LFM2.5 1.2B,Set brightness to 70 percent,Set Rightness to 70%,device_control,setScreenBrightness,"{""brightnessPercent"":70}",,{},0,0,0,24088,"No tool calls generated; raw: ""I'm sorry, but I can't set the ""Rightness"" parameter. Based on the available API, I can adjust screen brightness, toggle flashlight, control volume, enable/disable Wi-Fi, and create automation rules. Let me know if you'd like help with any of those.""",0.400,pipeline,pilot_en
+LFM2.5 1.2B,Dim the screen to 20 percent,Then the screen to 20%.,device_control,setScreenBrightness,"{""brightnessPercent"":20}",,{},0,0,0,22831,"No tool calls generated; raw: ""I'm sorry, but I can't adjust the screen brightness to 20%. The available API only allows setting the brightness to a percentage between 0 and 100, not specific values like 20%.""",0.333,pipeline,pilot_en
+LFM2.5 1.2B,Enable do not disturb for 30 minutes,Enable do not disturb for 30 minutes.,automation,setDoNotDisturb,"{""durationMinutes"":30}",setDoNotDisturb,"{""durationMinutes"":30}",1,1,1,21192,,0.000,pipeline,pilot_en
+LFM2.5 1.2B,Silence my phone for 2 hours,Silence my phone for two hours.,automation,setDoNotDisturb,"{""durationMinutes"":120}",setDoNotDisturb,"{""durationMinutes"":120}",1,1,1,20903,,0.167,pipeline,pilot_en
+LFM2.5 1.2B,Mute notifications when I am in class,Mute notifications when I'm in class.,automation,createRule,"{""trigger"":""in class"",""action"":""mute""}",createRule,"{""trigger"":""in class"",""action"":""mute""}",1,1,1,21009,,0.286,pipeline,pilot_en
+LFM2.5 1.2B,Set volume to 30 percent,set volume to 30%,device_control,setVolume,"{""volumePercent"":30}",setVolume,"{""volumePercent"":30}",1,1,1,20552,,0.200,pipeline,pilot_en
+Qwen3 0.6B,Turn on the flashlight,Going on the flashlight.,device_control,toggleFlashlight,"{""enable"":true}",toggleFlashlight,"{""enable"":true}",1,1,1,23711,,0.250,pipeline,pilot_en
+Qwen3 0.6B,Turn off the flashlight,Turn off the flashlight.,device_control,toggleFlashlight,"{""enable"":false}",toggleFlashlight,"{""enable"":false}",1,1,1,11706,,0.000,pipeline,pilot_en
+Qwen3 0.6B,Enable wifi,Enable Wi-Fi.,device_control,toggleWifi,"{""enable"":true}",toggleWifi,"{""enable"":true}",1,1,1,11504,,1.000,pipeline,pilot_en
+Qwen3 0.6B,Turn off wifi,Don't off lifefire.,device_control,toggleWifi,"{""enable"":false}",toggleFlashlight,"{""enable"":true}",0,0,0,11239,,0.667,pipeline,pilot_en
+Qwen3 0.6B,Set volume to 50 percent,Set volume to 50%,device_control,setVolume,"{""volumePercent"":50}",setVolume,"{""volumePercent"":50}",1,1,1,11344,,0.200,pipeline,pilot_en
+Qwen3 0.6B,Set volume to maximum,Set volume to maximum.,device_control,setVolume,"{""volumePercent"":100}",setVolume,"{""volumePercent"":100}",1,1,1,11472,,0.000,pipeline,pilot_en
+Qwen3 0.6B,Set brightness to 70 percent,Set Rightness to 70%,device_control,setScreenBrightness,"{""brightnessPercent"":70}",setVolume,"{""volumePercent"":70}",0,0,0,11305,,0.400,pipeline,pilot_en
+Qwen3 0.6B,Dim the screen to 20 percent,Then the screen to 20%.,device_control,setScreenBrightness,"{""brightnessPercent"":20}",createRule,"{""trigger"":""brightness"",""action"":""20%""}",0,0,0,11665,,0.333,pipeline,pilot_en
+Qwen3 0.6B,Enable do not disturb for 30 minutes,Enable do not disturb for 30 minutes.,automation,setDoNotDisturb,"{""durationMinutes"":30}",setDoNotDisturb,"{""durationMinutes"":30}",1,1,1,11958,,0.000,pipeline,pilot_en
+Qwen3 0.6B,Silence my phone for 2 hours,Silence my phone for two hours.,automation,setDoNotDisturb,"{""durationMinutes"":120}",setDoNotDisturb,"{""durationMinutes"":2}",0,1,0,11412,,0.167,pipeline,pilot_en
+Qwen3 0.6B,Mute notifications when I am in class,Mute notifications when I'm in class.,automation,createRule,"{""trigger"":""in class"",""action"":""mute""}",toggleFlashlight,"{""enable"":false}",0,0,0,11071,,0.286,pipeline,pilot_en
+Qwen3 0.6B,Set volume to 30 percent,set volume to 30%,device_control,setVolume,"{""volumePercent"":30}",setVolume,"{""volumePercent"":30}",1,1,1,11173,,0.200,pipeline,pilot_en
+Qwen3 1.7B,Turn on the flashlight,Going on the flashlight.,device_control,toggleFlashlight,"{""enable"":true}",toggleFlashlight,"{""enable"":true}",1,1,1,46561,,0.250,pipeline,pilot_en
+Qwen3 1.7B,Turn off the flashlight,Turn off the flashlight.,device_control,toggleFlashlight,"{""enable"":false}",toggleFlashlight,"{""enable"":false}",1,1,1,23312,,0.000,pipeline,pilot_en
+Qwen3 1.7B,Enable wifi,Enable Wi-Fi.,device_control,toggleWifi,"{""enable"":true}",toggleWifi,"{""enable"":true}",1,1,1,22938,,1.000,pipeline,pilot_en
+Qwen3 1.7B,Turn off wifi,Don't off lifefire.,device_control,toggleWifi,"{""enable"":false}",,{},0,0,0,24264,"No tool calls generated; raw: ""I'll create a rule to ""Don't off lifefire."" Let me know if you want to add any additional actions or parameters.""",0.667,pipeline,pilot_en
+Qwen3 1.7B,Set volume to 50 percent,Set volume to 50%,device_control,setVolume,"{""volumePercent"":50}",setVolume,"{""volumePercent"":50}",1,1,1,23919,,0.200,pipeline,pilot_en
+Qwen3 1.7B,Set volume to maximum,Set volume to maximum.,device_control,setVolume,"{""volumePercent"":100}",setVolume,"{""volumePercent"":100}",1,1,1,24214,,0.000,pipeline,pilot_en
+Qwen3 1.7B,Set brightness to 70 percent,Set Rightness to 70%,device_control,setScreenBrightness,"{""brightnessPercent"":70}",setScreenBrightness,"{""brightnessPercent"":70}",1,1,1,25379,,0.400,pipeline,pilot_en
+Qwen3 1.7B,Dim the screen to 20 percent,Then the screen to 20%.,device_control,setScreenBrightness,"{""brightnessPercent"":20}",setScreenBrightness,"{""brightnessPercent"":20}",1,1,1,30606,,0.333,pipeline,pilot_en
+Qwen3 1.7B,Enable do not disturb for 30 minutes,Enable do not disturb for 30 minutes.,automation,setDoNotDisturb,"{""durationMinutes"":30}",setDoNotDisturb,"{""durationMinutes"":30}",1,1,1,26006,,0.000,pipeline,pilot_en
+Qwen3 1.7B,Silence my phone for 2 hours,Silence my phone for two hours.,automation,setDoNotDisturb,"{""durationMinutes"":120}",setDoNotDisturb,"{""durationMinutes"":120}",1,1,1,25618,,0.167,pipeline,pilot_en
+Qwen3 1.7B,Mute notifications when I am in class,Mute notifications when I'm in class.,automation,createRule,"{""trigger"":""in class"",""action"":""mute""}",createRule,"{""trigger"":""in class"",""action"":""mute notifications""}",0,1,0,26215,,0.286,pipeline,pilot_en
+Qwen3 1.7B,Set volume to 30 percent,set volume to 30%,device_control,setVolume,"{""volumePercent"":30}",setVolume,"{""volumePercent"":30}",1,1,1,25242,,0.200,pipeline,pilot_en
+Qwen3.5 0.8B,Turn on the flashlight,Going on the flashlight.,device_control,toggleFlashlight,"{""enable"":true}",toggleFlashlight,"{""enable"":true}",1,1,1,56143,,0.250,pipeline,pilot_en
+Qwen3.5 0.8B,Turn off the flashlight,Turn off the flashlight.,device_control,toggleFlashlight,"{""enable"":false}",toggleFlashlight,"{""enable"":false}",1,1,1,54781,,0.000,pipeline,pilot_en
+Qwen3.5 0.8B,Enable wifi,Enable Wi-Fi.,device_control,toggleWifi,"{""enable"":true}",toggleWifi,"{""enable"":true}",1,1,1,54465,,1.000,pipeline,pilot_en
+Qwen3.5 0.8B,Turn off wifi,Don't off lifefire.,device_control,toggleWifi,"{""enable"":false}",setDoNotDisturb,"{""durationMinutes"":120}",0,0,0,57067,,0.667,pipeline,pilot_en
+Qwen3.5 0.8B,Set volume to 50 percent,Set volume to 50%,device_control,setVolume,"{""volumePercent"":50}",setVolume,"{""volumePercent"":50}",1,1,1,55976,,0.200,pipeline,pilot_en
+Qwen3.5 0.8B,Set volume to maximum,Set volume to maximum.,device_control,setVolume,"{""volumePercent"":100}",setVolume,"{""volumePercent"":100}",1,1,1,54913,,0.000,pipeline,pilot_en
+Qwen3.5 0.8B,Set brightness to 70 percent,Set Rightness to 70%,device_control,setScreenBrightness,"{""brightnessPercent"":70}",setScreenBrightness,"{""brightnessPercent"":70}",1,1,1,56574,,0.400,pipeline,pilot_en
+Qwen3.5 0.8B,Dim the screen to 20 percent,Then the screen to 20%.,device_control,setScreenBrightness,"{""brightnessPercent"":20}",setScreenBrightness,"{""brightnessPercent"":20}",1,1,1,55025,,0.333,pipeline,pilot_en
+Qwen3.5 0.8B,Enable do not disturb for 30 minutes,Enable do not disturb for 30 minutes.,automation,setDoNotDisturb,"{""durationMinutes"":30}",setDoNotDisturb,"{""durationMinutes"":30}",1,1,1,56640,,0.000,pipeline,pilot_en
+Qwen3.5 0.8B,Silence my phone for 2 hours,Silence my phone for two hours.,automation,setDoNotDisturb,"{""durationMinutes"":120}",setDoNotDisturb,"{""durationMinutes"":120}",1,1,1,63062,,0.167,pipeline,pilot_en
+Qwen3.5 0.8B,Mute notifications when I am in class,Mute notifications when I'm in class.,automation,createRule,"{""trigger"":""in class"",""action"":""mute""}",createRule,"{""trigger"":""in class"",""action"":""mute""}",1,1,1,57039,,0.286,pipeline,pilot_en
+Qwen3.5 0.8B,Set volume to 30 percent,set volume to 30%,device_control,setVolume,"{""volumePercent"":30}",setVolume,"{""volumePercent"":30}",1,1,1,57425,,0.200,pipeline,pilot_en
+Qwen3.5 2B,Turn on the flashlight,Going on the flashlight.,device_control,toggleFlashlight,"{""enable"":true}",toggleFlashlight,"{""enable"":true}",1,1,1,112866,,0.250,pipeline,pilot_en
+Qwen3.5 2B,Turn off the flashlight,Turn off the flashlight.,device_control,toggleFlashlight,"{""enable"":false}",toggleFlashlight,"{""enable"":false}",1,1,1,110127,,0.000,pipeline,pilot_en
+Qwen3.5 2B,Enable wifi,Enable Wi-Fi.,device_control,toggleWifi,"{""enable"":true}",toggleWifi,"{""enable"":true}",1,1,1,108423,,1.000,pipeline,pilot_en
+Qwen3.5 2B,Turn off wifi,Don't off lifefire.,device_control,toggleWifi,"{""enable"":false}",setDoNotDisturb,"{""durationMinutes"":60}",0,0,0,110345,,0.667,pipeline,pilot_en
+Qwen3.5 2B,Set volume to 50 percent,Set volume to 50%,device_control,setVolume,"{""volumePercent"":50}",setVolume,"{""volumePercent"":50}",1,1,1,107904,,0.200,pipeline,pilot_en
+Qwen3.5 2B,Set volume to maximum,Set volume to maximum.,device_control,setVolume,"{""volumePercent"":100}",setVolume,"{""volumePercent"":100}",1,1,1,107951,,0.000,pipeline,pilot_en
+Qwen3.5 2B,Set brightness to 70 percent,Set Rightness to 70%,device_control,setScreenBrightness,"{""brightnessPercent"":70}",setScreenBrightness,"{""brightnessPercent"":70}",1,1,1,110918,,0.400,pipeline,pilot_en
+Qwen3.5 2B,Dim the screen to 20 percent,Then the screen to 20%.,device_control,setScreenBrightness,"{""brightnessPercent"":20}",,{},0,0,0,112220,"No tool calls generated; raw: ""```json
+{
+  ""tool_name"": ""setScreenBrightness"",
+  ""arguments"": {
+    ""brightnessPercent"": 20
+  }
+}
+```""",0.333,pipeline,pilot_en
+Qwen3.5 2B,Enable do not disturb for 30 minutes,Enable do not disturb for 30 minutes.,automation,setDoNotDisturb,"{""durationMinutes"":30}",setDoNotDisturb,"{""durationMinutes"":30}",1,1,1,112134,,0.000,pipeline,pilot_en
+Qwen3.5 2B,Silence my phone for 2 hours,Silence my phone for two hours.,automation,setDoNotDisturb,"{""durationMinutes"":120}",setDoNotDisturb,"{""durationMinutes"":120}",1,1,1,104902,,0.167,pipeline,pilot_en
+Qwen3.5 2B,Mute notifications when I am in class,Mute notifications when I'm in class.,automation,createRule,"{""trigger"":""in class"",""action"":""mute""}",,{},0,0,0,106174,"No tool calls generated; raw: ""<tool_call>
+<function=createRule>
+<parameter=""trigger"">in class</parameter>
+<parameter=""action"">mute</parameter>
+</parameter>
+</parameter>""",0.286,pipeline,pilot_en
+Qwen3.5 2B,Set volume to 30 percent,set volume to 30%,device_control,setVolume,"{""volumePercent"":30}",setVolume,"{""volumePercent"":30}",1,1,1,103586,,0.200,pipeline,pilot_en
+Gemma 4 E2B,Turn on the flashlight,Turn on the flashlight,device_control,toggleFlashlight,"{""enable"":true}",toggleFlashlight,"{""enable"":true}",1,1,1,31485,,0.000,direct,pilot_en
+Gemma 4 E2B,Turn off the flashlight,Turn off the flashlight,device_control,toggleFlashlight,"{""enable"":false}",toggleFlashlight,"{""enable"":false}",1,1,1,34757,,0.000,direct,pilot_en
+Gemma 4 E2B,Enable wifi,Enable wifi,device_control,toggleWifi,"{""enable"":true}",toggleWifi,"{""enable"":true}",1,1,1,49619,,0.000,direct,pilot_en
+Gemma 4 E2B,Turn off wifi,Turn off wifi,device_control,toggleWifi,"{""enable"":false}",toggleWifi,"{""enable"":false}",1,1,1,51210,,0.000,direct,pilot_en
+Gemma 4 E2B,Set volume to 50 percent,Set volume to 50 percent,device_control,setVolume,"{""volumePercent"":50}",setVolume,"{""volumePercent"":50}",1,1,1,34897,,0.000,direct,pilot_en
+Gemma 4 E2B,Set volume to maximum,Set volume to maximum,device_control,setVolume,"{""volumePercent"":100}",setVolume,"{""volumePercent"":100}",1,1,1,35612,,0.000,direct,pilot_en
+Gemma 4 E2B,Set brightness to 70 percent,Set brightness to 70 percent,device_control,setScreenBrightness,"{""brightnessPercent"":70}",setScreenBrightness,"{""brightnessPercent"":73}",1,1,1,35301,,0.000,direct,pilot_en
+Gemma 4 E2B,Dim the screen to 20 percent,Dim the screen to 20 percent,device_control,setScreenBrightness,"{""brightnessPercent"":20}",setScreenBrightness,"{""brightnessPercent"":20}",1,1,1,38962,,0.000,direct,pilot_en
+Gemma 4 E2B,Enable do not disturb for 30 minutes,Enable do not disturb for 30 minutes,automation,setDoNotDisturb,"{""durationMinutes"":30}",setDoNotDisturb,"{""durationMinutes"":30}",1,1,1,39603,,0.000,direct,pilot_en
+Gemma 4 E2B,Silence my phone for 2 hours,Silence my phone for 2 hours,automation,setDoNotDisturb,"{""durationMinutes"":120}",setDoNotDisturb,"{""durationMinutes"":120}",1,1,1,51788,,0.000,direct,pilot_en
+Gemma 4 E2B,Mute notifications when I am in class,Mute notifications when I am in class,automation,createRule,"{""trigger"":""in class"",""action"":""mute""}",createRule,"{""action"":""mute"",""trigger"":""in class""}",1,1,1,43038,,0.000,direct,pilot_en
+Gemma 4 E2B,Set volume to 30 percent,Set volume to 30 percent,device_control,setVolume,"{""volumePercent"":30}",setVolume,"{""volumePercent"":30}",1,1,1,42387,,0.000,direct,pilot_en
